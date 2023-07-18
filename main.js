@@ -129,6 +129,7 @@ function run() {
                 } else if (data.acn == "fv") {
                     if (arena_tagged_clips.length == 0) {
                         console.log("Arena: No clips with tag", config.arena.clip_name_tag);
+                        getTaggedClips();
                         return;
                     }
                     //console.log("message", data);
@@ -172,7 +173,7 @@ function run() {
                     for (var i = 0; i < arena_tagged_clips.length; i++) {
                         clip_id = arena_tagged_clips[i];
                         var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clip_id;
-                        console.log("SENDING TEXT TO TARGET", clip_id, target_url);
+                        //console.log("SENDING TEXT TO TARGET", clip_id, target_url);
                         request({ url: target_url, method: 'PUT', json: snd_obj }, function(error, response, body) {
                             //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
                             //console.log(error, response, body);
@@ -182,7 +183,7 @@ function run() {
                                 return;
                             }
                             if (response.statusCode == 204) {
-                                console.log(response.statusCode, "Arena: Upload OK", arena_path_by_id);
+                                console.log(response.statusCode, "Arena: Upload OK", arena_path_by_id, clip_id);
                             }
                         });
                     }
