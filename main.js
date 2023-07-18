@@ -119,10 +119,6 @@ function run() {
         });
         connection.on('message', function(message) {
             //console.log(message);
-            if (arena_tagged_clips.length == 0) {
-                console.log("Arena: No clips with tag", config.arena.clip_name_tag);
-                return;
-            }
             if (message.type === 'utf8') {
                 //console.log("Received: '" + message.utf8Data + "'");
                 var data = JSON.parse(message.utf8Data);
@@ -131,6 +127,10 @@ function run() {
                 } else if (data.acn == "ath") {
                     console.log(data);
                 } else if (data.acn == "fv") {
+                    if (arena_tagged_clips.length == 0) {
+                        console.log("Arena: No clips with tag", config.arena.clip_name_tag);
+                        return;
+                    }
                     //console.log("message", data);
                     if (data.ary === undefined) {
                         console.log("ProPresenter: undefined data");
