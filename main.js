@@ -11,7 +11,7 @@ const path = require("path")
 const os = require('os')
 const fs = require('fs')
 //
-let defaultConfigFileName = 'env.json'
+let defaultConfigFileName = 'env_default.json'
 var configFilePath = undefined
 var config = {}
 var global_connection_timer;
