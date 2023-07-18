@@ -1,1 +1,2 @@
+cd .
 node main.js
