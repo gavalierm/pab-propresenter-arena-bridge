@@ -12,7 +12,7 @@ const os = require('os')
 const fs = require('fs')
 //
 let defaultConfigFileName = 'env_default.json'
-var configFilePath = 'env.conf';
+var configFilePath = 'env.json';
 var config = {}
 var global_connection_timer;
 var request = require('request');
