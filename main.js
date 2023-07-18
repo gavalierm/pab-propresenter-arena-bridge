@@ -180,6 +180,7 @@ function run() {
                             //console.log(response.statusCode);
                             if (error) {
                                 console.log("Arena: Connection error", error);
+                                arena_tagged_clips = [];
                                 return;
                             }
                             if (response.statusCode == 204) {
@@ -222,7 +223,7 @@ function getTaggedClips(tag = "#pab-target") {
                 clips = layers[i].clips;
                 //console.log(clips);
                 for (var x = 0; x < clips.length; x++) {
-                    console.log(clips[x].name.value);
+                    //console.log(clips[x]);
                     if (clips[x].name.value.includes(config.arena.clip_name_tag)) {
                         arena_tagged_clips.push(clips[x].id);
                     }
