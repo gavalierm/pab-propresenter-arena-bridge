@@ -18,7 +18,7 @@ var global_connection_timer;
 var request = require('request');
 // Connection
 var arena_path_by_id = "/composition/clips/by-id";
-var arena_tagged_clips = [];
+var arena_tagged_clips = {};
 var authenticated = false;
 var WebSocketClient = require('websocket').client;
 var client = new WebSocketClient();
@@ -140,7 +140,11 @@ function run() {
                     var content = data.ary;
                     //console.log(content[0]);
                     var slideText = null;
+                    var slideArray = null;
                     var snd_obj = {};
+                    var clip_id = 0;
+                    var working_clips = [];
+                    //
                     for (var i = 0; i < content.length; i++) {
                         //console.log(content[i]);
                         if (content[i].acn == "cs") {
@@ -157,36 +161,48 @@ function run() {
                         slideText = slideText.replace(/^\r+|\r+$/gm, '');
                         //add br
                         slideText = slideText.replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n");
-                        //add box
-                        //slideText = slideText.replace(/\r/g, '</div><div class="box">');
                         //
-                        //slideText = `<div class="box">${slideText}</div>`;
-                        //reverse order of boxes
-                        slideText = slideText.split("\r").reverse().join("\r");
+                        slideArray = slideText.split("\r").reverse();
                         //
                     } else {
-                        slideText = "";
+                        slideArray = [];
                     }
-                    console.log(slideText);
-                    snd_obj = { "video": { "sourceparams": { "Text": slideText } } };
-                    var clip_id = 0;
-                    for (var i = 0; i < arena_tagged_clips.length; i++) {
-                        clip_id = arena_tagged_clips[i];
-                        var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clip_id;
-                        //console.log("SENDING TEXT TO TARGET", clip_id, target_url);
-                        request({ url: target_url, method: 'PUT', json: snd_obj }, function(error, response, body) {
-                            //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
-                            //console.log(error, response, body);
-                            //console.log(response.statusCode);
-                            if (error) {
-                                console.log("Arena: Connection error", error);
-                                arena_tagged_clips = [];
-                                return;
-                            }
-                            if (response.statusCode == 204) {
-                                console.log(response.statusCode, "Arena: Upload OK", arena_path_by_id, clip_id);
-                            }
-                        });
+                    //console.log(slideText);
+                    clip_id = 0;
+                    var sendText = '';
+                    for (var key in arena_tagged_clips) {
+                        console.log("Do: ", key);
+                        if (key == config.arena.clip_name_tag) {
+                            sendText = slideArray.join("\r");
+                            sendText = (sendText) ? sendText : '';
+                        } else {
+                            //index from key
+                            var index = key.split('-');
+                            sendText = slideArray[parseInt(index[1], 10) - 1];
+                            sendText = (sendText) ? sendText : '';
+                        }
+                        snd_obj = { "video": { "sourceparams": { "Text": sendText } } };
+                        console.log("sendText", snd_obj);
+                        for (var i = 0; i < arena_tagged_clips[key].length; i++) {
+                            //
+                            clip_id = arena_tagged_clips[key][i];
+                            //console.log(clip_id);
+                            var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clip_id;
+                            //console.log("SENDING TEXT TO TARGET", clip_id, target_url);
+                            request({ url: target_url, method: 'PUT', json: snd_obj }, function(error, response, body) {
+                                //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
+                                //console.log(error, response, body);
+                                //console.log(response.statusCode);
+                                if (error) {
+                                    console.log("Arena: Connection error", error);
+                                    arena_tagged_clips = {};
+                                    return;
+                                }
+                                if (response.statusCode == 204) {
+                                    console.log(response.statusCode, "Arena: Upload OK", arena_path_by_id, clip_id);
+                                }
+                            });
+                        }
                     }
                 } else {
                     console.log("ProPresenter: Unknown ACN", data);
@@ -201,7 +217,7 @@ function run() {
 
 function getTaggedClips(tag = "#pab-target") {
     console.log("getTaggedClips");
-    arena_tagged_clips = [];
+    arena_tagged_clips = {};
     request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1/composition', method: 'GET' }, function(error, response, body) {
         //console.log(error, response, body);
         //console.log(response.statusCode);
@@ -219,13 +235,28 @@ function getTaggedClips(tag = "#pab-target") {
             //console.log(body.layers);
             var layers = body.layers;
             var clips;
+            let pattern = /#pab\-(\d+)/i;
             for (var i = 0; i < layers.length; i++) {
                 clips = layers[i].clips;
                 //console.log(clips);
                 for (var x = 0; x < clips.length; x++) {
                     //console.log(clips[x]);
                     if (clips[x].name.value.includes(config.arena.clip_name_tag)) {
-                        arena_tagged_clips.push(clips[x].id);
+                        let result = clips[x].name.value.match(pattern);
+                        //console.log("Restul", result);
+                        if (result) {
+                            //result = parseInt(result[0], 10);
+                            result = result[0];
+                            if (arena_tagged_clips[result] === undefined) {
+                                arena_tagged_clips[result] = [];
+                            }
+                            arena_tagged_clips[result].push(clips[x].id);
+                        } else {
+                            if (arena_tagged_clips[config.arena.clip_name_tag] === undefined) {
+                                arena_tagged_clips[config.arena.clip_name_tag] = [];
+                            }
+                            arena_tagged_clips[config.arena.clip_name_tag].push(clips[x].id);
+                        }
                     }
                 }
             }
