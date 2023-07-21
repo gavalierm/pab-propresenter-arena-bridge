@@ -24,3 +24,6 @@ You can have this variations of #pab tag in name
 -- if you want to use arena transition between slides
 - #pab-1,#pab-2,#pab-(...) : each number means each text object in propresenter slide
 -- if you have 2 text object in one slide and you want to have two different looks for each text object, you can add one clip with tag #pab-1 and second with #pab-2
+
+# Disclaimer
+If you want you can use this library freely but i do not plan to maintain. It is dirty working solution for our small needs. If you want to collaborate or maintain this, you are wellcome.
