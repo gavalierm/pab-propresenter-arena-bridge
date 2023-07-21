@@ -20,7 +20,7 @@ App will be search for clips with "#pab" whitin name and remember it.
 # Advanced setup and usecase
 Almost same as Basic setup but:
 You can have this variations of #pab tag in name
-- #pab-a/#pab-b : used for ping-pong triggering
+- #pab-a/#pab-b : used for auto ping-pong triggering
 -- if you want to use arena transition between slides
 - #pab-1,#pab-2,#pab-(...) : each number means each text object in propresenter slide
--- if you have 2 text object in propresenter slide and you want to separate it in two clips you can do it by taggin each cliep with different number
+-- if you have 2 text object in one slide and you want to have two different looks for each text object, you can add one clip with tag #pab-1 and second with #pab-2
