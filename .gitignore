@@ -1,2 +1,6 @@
 env.json
 PAB.command
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
