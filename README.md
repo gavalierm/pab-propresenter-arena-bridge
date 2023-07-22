@@ -27,3 +27,6 @@ You can have this variations of #pab tag in name
 
 # Disclaimer
 If you want you can use this library freely but i do not plan to maintain. It is dirty working solution for our small needs. If you want to collaborate or maintain this, you are welcome.
+
+# Support
+If you want you can support me at https://paypal.me/MarcelGavalier
