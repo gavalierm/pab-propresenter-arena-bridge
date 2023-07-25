@@ -18,11 +18,15 @@ var global_connection_timer;
 var request = require('request');
 // Connection
 var arena_path_by_id = "/composition/clips/by-id";
-var arena_tagged_clips = {};
+var arena_tagged_clips_x = [];
+var arena_tagged_clips_1 = [];
+var arena_tagged_clips_2 = [];
 var arena_tagged_clips_a = [];
 var arena_tagged_clips_b = [];
 var arena_tagged_clips_f = [];
 var arena_tagged_clips_l = [];
+var arena_tagged_clips_F = [];
+var arena_tagged_clips_L = [];
 var authenticated = false;
 var WebSocketClient = require('websocket').client;
 var client = new WebSocketClient();
@@ -132,7 +136,7 @@ function run() {
                 } else if (data.acn == "ath") {
                     console.log(data);
                 } else if (data.acn == "fv") {
-                    if (arena_tagged_clips.length == 0) {
+                    if (arena_tagged_clips_x.length == 0) {
                         console.log("Arena: No clips with tag", config.arena.clip_name_tag);
                         getTaggedClips();
                         return;
@@ -144,8 +148,8 @@ function run() {
                     }
                     var content = data.ary;
                     //console.log(content[0]);
-                    var slideText = null;
-                    var slideArray = null;
+                    var slideText = '';
+                    var slideArray = [];
                     var snd_obj = {};
                     var clip_id = 0;
                     var working_clips = [];
@@ -158,7 +162,7 @@ function run() {
                             slideText = content[i].txt + "";
                         }
                     }
-                    if (slideText != null) {
+                    if (slideText != '') {
                         //
                         slideText = slideText.trim();
                         //
@@ -170,39 +174,77 @@ function run() {
                         //
                         slideArray = slideText.split("\r").reverse();
                         //
-                    } else {
-                        slideArray = [];
                     }
                     //console.log(slideText);
-                    clip_id = 0;
-                    var slideText = '';
-                    var slideTextSplitted = [];
                     var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id;
+                    //
                     if (turn_ab) {
                         console.log("A turn");
                     } else {
                         console.log("B turn");
                     }
                     //
-                    for (var key in arena_tagged_clips) {
-                        //console.log("Do: ", key, "at turn", turn_ab);
-                        if (key == config.arena.clip_name_tag) {
-                            slideText = slideArray.join("\r");
-                            slideText = (slideText) ? slideText : '';
-                        } else {
-                            //index from key
-                            var index = key.split('-');
-                            slideText = slideArray[parseInt(index[1], 10) - 1];
-                            slideText = (slideText) ? slideText : '';
+                    //fulltext
+                    var full_text = slideArray.join("\r");
+                    //first last
+                    var fullTextSplited = full_text.split(' ');
+                    var first_word = '';
+                    if (fullTextSplited[0].length < 4) {
+                        first_word = fullTextSplited[0] + ' ' + fullTextSplited[1];
+                        first_word_upper = first_word.toLocaleUpperCase();
+                    } else {
+                        first_word = fullTextSplited[0];
+                    }
+                    var first_word_upper = first_word.toLocaleUpperCase();
+                    var last_word = '';
+                    if (fullTextSplited[fullTextSplited.length - 1].length < 4) {
+                        last_word = fullTextSplited[fullTextSplited.length - 2] + ' ' + fullTextSplited[fullTextSplited.length - 1];
+                    } else {
+                        last_word = fullTextSplited[fullTextSplited.length - 1];
+                    }
+                    var last_word_upper = last_word.toLocaleUpperCase();
+                    //
+                    //var index = key.split('-');
+                    //slideText = slideArray[parseInt(index[1], 10) - 1];
+                    //slideText = (slideText) ? slideText : '';
+                    var textForThisClip = '';
+                    for (var i = 0; i < arena_tagged_clips_x.length; i++) {
+                        //
+                        clip_id = arena_tagged_clips_x[i];
+                        //
+                        textForThisClip = full_text;
+                        //
+                        if (arena_tagged_clips_f.includes(clip_id)) {
+                            textForThisClip = first_word;
                         }
-                        slideTextSplitted = slideText.split(' ');
-                        full_obj = { "video": { "sourceparams": { "Text": slideText } } };
-                        first_obj = { "video": { "sourceparams": { "Text": slideTextSplitted[0] } } };
-                        last_obj = { "video": { "sourceparams": { "Text": slideTextSplitted[slideTextSplitted.length - 1] } } };
-                        //console.log("slideText", slideText);
-                        for (var i = 0; i < arena_tagged_clips[key].length; i++) {
-                            //
-                            clip_id = arena_tagged_clips[key][i];
+                        if (arena_tagged_clips_l.includes(clip_id)) {
+                            textForThisClip = last_word;
+                        }
+                        if (arena_tagged_clips_F.includes(clip_id)) {
+                            textForThisClip = first_word_upper;
+                        }
+                        if (arena_tagged_clips_L.includes(clip_id)) {
+                            textForThisClip = last_word_upper;
+                        }
+                        snd_obj = { "video": { "sourceparams": { "Text": textForThisClip } } };
+                        //
+                        setTimeout(function(target, id, obj) {
+                            request({ url: target + '/' + id, method: 'PUT', json: obj }, function(error, response, body) {
+                                //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
+                                //console.log(error, response, body);
+                                //console.log(response.statusCode);
+                                if (error) {
+                                    console.log("Arena: Connection error", error);
+                                    clearTagged();
+                                    return;
+                                }
+                                if (response.statusCode == 204) {
+                                    //console.log(response.statusCode, "Arena: Upload OK");
+                                }
+                            });
+                        }, 0, target_url, clip_id, snd_obj);
+                        //
+                        if (arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_b.includes(clip_id)) {
                             if (turn_ab && arena_tagged_clips_b.includes(clip_id)) {
                                 //onsole.log("SKIP turn A for", clip_id);
                                 continue;
@@ -210,17 +252,8 @@ function run() {
                                 //console.log("SKIP turn B for", clip_id);
                                 continue;
                             }
-                            if (arena_tagged_clips_f.includes(clip_id)) {
-                                snd_obj = first_obj;
-                            } else if (arena_tagged_clips_l.includes(clip_id)) {
-                                snd_obj = last_obj;
-                            } else {
-                                snd_obj = full_obj;
-                            }
-                            //console.log(clip_id);
-                            //console.log("SENDING TEXT TO TARGET", clip_id, target_url);
-                            setTimeout(function(target, id) {
-                                request({ url: target + '/' + id, method: 'PUT', json: snd_obj }, function(error, response, body) {
+                            setTimeout(function(target, id, obj) {
+                                request({ url: target + '/' + id + '/connect', method: 'POST', json: true }, function(error, response, body) {
                                     //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
                                     //console.log(error, response, body);
                                     //console.log(response.statusCode);
@@ -230,28 +263,12 @@ function run() {
                                         return;
                                     }
                                     if (response.statusCode == 204) {
-                                        console.log(response.statusCode, "Arena: Upload OK");
+                                        //console.log(response.statusCode, "Arena: Triggered OK");
                                     }
                                 });
-                            }, 0, target_url, clip_id);
-                            if (arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_b.includes(clip_id)) {
-                                setTimeout(function(target, id) {
-                                    request({ url: target + '/' + id + '/connect', method: 'POST', json: true }, function(error, response, body) {
-                                        //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
-                                        //console.log(error, response, body);
-                                        //console.log(response.statusCode);
-                                        if (error) {
-                                            console.log("Arena: Connection error", error);
-                                            clearTagged();
-                                            return;
-                                        }
-                                        if (response.statusCode == 204) {
-                                            console.log(response.statusCode, "Arena: Triggered OK");
-                                        }
-                                    });
-                                }, 50, target_url, clip_id);
-                            }
+                            }, 50, target_url, clip_id, snd_obj);
                         }
+                        //console.log("X", full_obj, "F", first_obj, "L", last_obj, "FF", first_obj, "LL", last_obj);
                     }
                 } else {
                     console.log("ProPresenter: Unknown ACN", data);
@@ -265,11 +282,13 @@ function run() {
 }
 
 function clearTagged() {
-    arena_tagged_clips = {};
+    arena_tagged_clips_x = [];
     arena_tagged_clips_a = [];
     arena_tagged_clips_b = [];
     arena_tagged_clips_f = [];
     arena_tagged_clips_l = [];
+    arena_tagged_clips_F = [];
+    arena_tagged_clips_L = [];
 }
 
 function getTaggedClips(tag = "#pab") {
@@ -292,35 +311,50 @@ function getTaggedClips(tag = "#pab") {
             //console.log(body.layers);
             var layers = body.layers;
             var clips;
-            let pattern_n = /#pab\-(\d+)/i;
-            let pattern_a = /#pab-a/i;
-            let pattern_b = /#pab-b/i;
-            let pattern_f = /#pab-f/i;
-            let pattern_l = /#pab-l/i;
+            let pattern_1 = /#pab-1/;
+            let pattern_2 = /#pab-1/;
+            let pattern_a = /#pab-a/;
+            let pattern_b = /#pab-b/;
+            let pattern_f = /#pab-f/;
+            let pattern_l = /#pab-l/;
+            let pattern_F = /#pab-F/;
+            let pattern_L = /#pab-L/;
             for (var i = 0; i < layers.length; i++) {
                 clips = layers[i].clips;
                 //console.log(clips);
                 for (var x = 0; x < clips.length; x++) {
                     //console.log(clips[x]);
                     if (clips[x].name.value.includes(config.arena.clip_name_tag)) {
-                        let result_n = clips[x].name.value.match(pattern_n);
+                        let result_1 = clips[x].name.value.match(pattern_1);
+                        let result_2 = clips[x].name.value.match(pattern_2);
                         let result_a = clips[x].name.value.match(pattern_a);
                         let result_b = clips[x].name.value.match(pattern_b);
                         let result_f = clips[x].name.value.match(pattern_f);
                         let result_l = clips[x].name.value.match(pattern_l);
+                        let result_F = clips[x].name.value.match(pattern_F);
+                        let result_L = clips[x].name.value.match(pattern_L);
                         //console.log("Restul", result_n);
-                        if (result_n) {
+                        //all clips
+                        if (arena_tagged_clips_x === undefined) {
+                            arena_tagged_clips_x = [];
+                        }
+                        arena_tagged_clips_x.push(clips[x].id);
+                        //
+                        if (result_1) {
                             //result_n = parseInt(result_n[0], 10);
-                            result_n = result_n[0];
-                            if (arena_tagged_clips[result_n] === undefined) {
-                                arena_tagged_clips[result_n] = [];
+                            //result_n = result_n[0];
+                            if (arena_tagged_clips_1 === undefined) {
+                                arena_tagged_clips_1 = [];
                             }
-                            arena_tagged_clips[result_n].push(clips[x].id);
-                        } else {
-                            if (arena_tagged_clips[config.arena.clip_name_tag] === undefined) {
-                                arena_tagged_clips[config.arena.clip_name_tag] = [];
+                            arena_tagged_clips_1.push(clips[x].id);
+                        }
+                        if (result_2) {
+                            //result_n = parseInt(result_n[0], 10);
+                            //result_n = result_n[0];
+                            if (arena_tagged_clips_2 === undefined) {
+                                arena_tagged_clips_2 = [];
                             }
-                            arena_tagged_clips[config.arena.clip_name_tag].push(clips[x].id);
+                            arena_tagged_clips_2.push(clips[x].id);
                         }
                         if (result_a) {
                             //result_n = parseInt(result_n[0], 10);
@@ -354,12 +388,32 @@ function getTaggedClips(tag = "#pab") {
                             }
                             arena_tagged_clips_l.push(clips[x].id);
                         }
+                        if (result_F) {
+                            //result_n = parseInt(result_n[0], 10);
+                            //result_n = result_n[0];
+                            if (arena_tagged_clips_F === undefined) {
+                                arena_tagged_clips_F = [];
+                            }
+                            arena_tagged_clips_F.push(clips[x].id);
+                        }
+                        if (result_L) {
+                            //result_n = parseInt(result_n[0], 10);
+                            //result_n = result_n[0];
+                            if (arena_tagged_clips_L === undefined) {
+                                arena_tagged_clips_L = [];
+                            }
+                            arena_tagged_clips_L.push(clips[x].id);
+                        }
                     }
                 }
             }
-            console.log("clips X", arena_tagged_clips);
+            console.log("clips X", arena_tagged_clips_x);
             console.log("clips A", arena_tagged_clips_a);
             console.log("clips B", arena_tagged_clips_b);
+            console.log("clips F", arena_tagged_clips_f);
+            console.log("clips L", arena_tagged_clips_l);
+            console.log("clips FF", arena_tagged_clips_F);
+            console.log("clips LL", arena_tagged_clips_L);
         }
     });
 }
