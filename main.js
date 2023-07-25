@@ -149,6 +149,13 @@ function run() {
                     var content = data.ary;
                     //console.log(content[0]);
                     var slideText = '';
+                    var full_text = '';
+                    var fullTextSplited = '';
+                    var first_word = '';
+                    var first_word_upper = '';
+                    var last_word = '';
+                    var last_word_upper = '';
+                    //
                     var slideArray = [];
                     var snd_obj = {};
                     var clip_id = 0;
@@ -159,7 +166,9 @@ function run() {
                         //console.log(content[i]);
                         if (content[i].acn == "cs") {
                             //console.log("ACN CS", content[i].txt);
-                            slideText = content[i].txt + "";
+                            if (content[i].txt) {
+                                slideText = content[i].txt + "";
+                            }
                         }
                     }
                     if (slideText != '') {
@@ -174,6 +183,25 @@ function run() {
                         //
                         slideArray = slideText.split("\r").reverse();
                         //
+                        //fulltext
+                        full_text = slideArray.join("\r");
+                        //first last
+                        fullTextSplited = full_text.split(' ');
+                        first_word = '';
+                        if (fullTextSplited[0].length < 4) {
+                            first_word = fullTextSplited[0] + ' ' + fullTextSplited[1];
+                            first_word_upper = first_word.toLocaleUpperCase();
+                        } else {
+                            first_word = fullTextSplited[0];
+                        }
+                        first_word_upper = first_word.toLocaleUpperCase();
+                        last_word = '';
+                        if (fullTextSplited[fullTextSplited.length - 1].length < 4) {
+                            last_word = fullTextSplited[fullTextSplited.length - 2] + ' ' + fullTextSplited[fullTextSplited.length - 1];
+                        } else {
+                            last_word = fullTextSplited[fullTextSplited.length - 1];
+                        }
+                        last_word_upper = last_word.toLocaleUpperCase();
                     }
                     //console.log(slideText);
                     var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id;
@@ -184,25 +212,6 @@ function run() {
                         console.log("B turn");
                     }
                     //
-                    //fulltext
-                    var full_text = slideArray.join("\r");
-                    //first last
-                    var fullTextSplited = full_text.split(' ');
-                    var first_word = '';
-                    if (fullTextSplited[0].length < 4) {
-                        first_word = fullTextSplited[0] + ' ' + fullTextSplited[1];
-                        first_word_upper = first_word.toLocaleUpperCase();
-                    } else {
-                        first_word = fullTextSplited[0];
-                    }
-                    var first_word_upper = first_word.toLocaleUpperCase();
-                    var last_word = '';
-                    if (fullTextSplited[fullTextSplited.length - 1].length < 4) {
-                        last_word = fullTextSplited[fullTextSplited.length - 2] + ' ' + fullTextSplited[fullTextSplited.length - 1];
-                    } else {
-                        last_word = fullTextSplited[fullTextSplited.length - 1];
-                    }
-                    var last_word_upper = last_word.toLocaleUpperCase();
                     //
                     //var index = key.split('-');
                     //slideText = slideArray[parseInt(index[1], 10) - 1];
