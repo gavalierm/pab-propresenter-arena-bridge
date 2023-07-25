@@ -175,25 +175,30 @@ function run() {
                     }
                     //console.log(slideText);
                     clip_id = 0;
-                    var sendText = '';
+                    var slideText = '';
+                    var slideTextSplitted = [];
                     if (turn_ab) {
                         console.log("A turn");
                     } else {
                         console.log("B turn");
                     }
+                    //
                     for (var key in arena_tagged_clips) {
                         //console.log("Do: ", key, "at turn", turn_ab);
                         if (key == config.arena.clip_name_tag) {
-                            sendText = slideArray.join("\r");
-                            sendText = (sendText) ? sendText : '';
+                            slideText = slideArray.join("\r");
+                            slideText = (slideText) ? slideText : '';
                         } else {
                             //index from key
                             var index = key.split('-');
-                            sendText = slideArray[parseInt(index[1], 10) - 1];
-                            sendText = (sendText) ? sendText : '';
+                            slideText = slideArray[parseInt(index[1], 10) - 1];
+                            slideText = (slideText) ? slideText : '';
                         }
-                        snd_obj = { "video": { "sourceparams": { "Text": sendText } } };
-                        //console.log("sendText", sendText);
+                        slideTextSplitted = slideText.split(' ');
+                        full_obj = { "video": { "sourceparams": { "Text": slideText } } };
+                        first_obj = { "video": { "sourceparams": { "Text": slideTextSplitted[0] } } };
+                        last_obj = { "video": { "sourceparams": { "Text": slideTextSplitted[slideTextSplitted.length - 1] } } };
+                        //console.log("slideText", slideText);
                         for (var i = 0; i < arena_tagged_clips[key].length; i++) {
                             //
                             clip_id = arena_tagged_clips[key][i];
@@ -203,6 +208,13 @@ function run() {
                             } else if (!turn_ab && arena_tagged_clips_a.includes(clip_id)) {
                                 //console.log("SKIP turn B for", clip_id);
                                 continue;
+                            }
+                            if (arena_tagged_clips_f.includes(clip_id)) {
+                                snd_obj = first_obj;
+                            } else if (arena_tagged_clips_l.includes(clip_id)) {
+                                snd_obj = last_obj;
+                            } else {
+                                snd_obj = full_obj;
                             }
                             //console.log(clip_id);
                             var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clip_id;
