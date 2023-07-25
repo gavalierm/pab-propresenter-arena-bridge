@@ -312,7 +312,7 @@ function getTaggedClips(tag = "#pab") {
             var layers = body.layers;
             var clips;
             let pattern_1 = /#pab-1/;
-            let pattern_2 = /#pab-1/;
+            let pattern_2 = /#pab-2/;
             let pattern_a = /#pab-a/;
             let pattern_b = /#pab-b/;
             let pattern_f = /#pab-f/;
