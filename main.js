@@ -177,6 +177,7 @@ function run() {
                     clip_id = 0;
                     var slideText = '';
                     var slideTextSplitted = [];
+                    var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id;
                     if (turn_ab) {
                         console.log("A turn");
                     } else {
@@ -217,25 +218,25 @@ function run() {
                                 snd_obj = full_obj;
                             }
                             //console.log(clip_id);
-                            var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clip_id;
                             //console.log("SENDING TEXT TO TARGET", clip_id, target_url);
-                            request({ url: target_url, method: 'PUT', json: snd_obj }, function(error, response, body) {
-                                //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
-                                //console.log(error, response, body);
-                                //console.log(response.statusCode);
-                                var connect_url = target_url + '/connect';
-                                if (error) {
-                                    console.log("Arena: Connection error", error);
-                                    clearTagged();
-                                    return;
-                                }
-                                if (response.statusCode == 204) {
-                                    console.log(response.statusCode, "Arena: Upload OK");
-                                }
-                            });
+                            setTimeout(function(target, id) {
+                                request({ url: target + '/' + id, method: 'PUT', json: snd_obj }, function(error, response, body) {
+                                    //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
+                                    //console.log(error, response, body);
+                                    //console.log(response.statusCode);
+                                    if (error) {
+                                        console.log("Arena: Connection error", error);
+                                        clearTagged();
+                                        return;
+                                    }
+                                    if (response.statusCode == 204) {
+                                        console.log(response.statusCode, "Arena: Upload OK");
+                                    }
+                                });
+                            }, 0);
                             if (arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_b.includes(clip_id)) {
-                                setTimeout(function() {
-                                    request({ url: connect_url, method: 'POST', json: true }, function(error, response, body) {
+                                setTimeout(function(target, id) {
+                                    request({ url: target + '/' + id + '/connect', method: 'POST', json: true }, function(error, response, body) {
                                         //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
                                         //console.log(error, response, body);
                                         //console.log(response.statusCode);
