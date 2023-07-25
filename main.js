@@ -233,7 +233,7 @@ function run() {
                                         console.log(response.statusCode, "Arena: Upload OK");
                                     }
                                 });
-                            }, 0);
+                            }, 0, target_url, clip_id);
                             if (arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_b.includes(clip_id)) {
                                 setTimeout(function(target, id) {
                                     request({ url: target + '/' + id + '/connect', method: 'POST', json: true }, function(error, response, body) {
@@ -249,7 +249,7 @@ function run() {
                                             console.log(response.statusCode, "Arena: Triggered OK");
                                         }
                                     });
-                                }, 50);
+                                }, 50, target_url, clip_id);
                             }
                         }
                     }
