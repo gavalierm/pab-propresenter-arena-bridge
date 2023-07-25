@@ -231,23 +231,25 @@ function run() {
                                 }
                                 if (response.statusCode == 204) {
                                     console.log(response.statusCode, "Arena: Upload OK");
-                                    setTimeout(function() {
-                                        request({ url: connect_url, method: 'POST', json: true }, function(error, response, body) {
-                                            //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
-                                            //console.log(error, response, body);
-                                            //console.log(response.statusCode);
-                                            if (error) {
-                                                console.log("Arena: Connection error", error);
-                                                clearTagged();
-                                                return;
-                                            }
-                                            if (response.statusCode == 204) {
-                                                console.log(response.statusCode, "Arena: Triggered OK");
-                                            }
-                                        });
-                                    }, 50);
                                 }
                             });
+                            if (arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_b.includes(clip_id)) {
+                                setTimeout(function() {
+                                    request({ url: connect_url, method: 'POST', json: true }, function(error, response, body) {
+                                        //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
+                                        //console.log(error, response, body);
+                                        //console.log(response.statusCode);
+                                        if (error) {
+                                            console.log("Arena: Connection error", error);
+                                            clearTagged();
+                                            return;
+                                        }
+                                        if (response.statusCode == 204) {
+                                            console.log(response.statusCode, "Arena: Triggered OK");
+                                        }
+                                    });
+                                }, 50);
+                            }
                         }
                     }
                 } else {
