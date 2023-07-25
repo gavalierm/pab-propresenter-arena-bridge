@@ -292,8 +292,8 @@ function getTaggedClips(tag = "#pab") {
             let pattern_n = /#pab\-(\d+)/i;
             let pattern_a = /#pab-a/i;
             let pattern_b = /#pab-b/i;
-            let pattern_a = /#pab-f/i;
-            let pattern_b = /#pab-l/i;
+            let pattern_f = /#pab-f/i;
+            let pattern_l = /#pab-l/i;
             for (var i = 0; i < layers.length; i++) {
                 clips = layers[i].clips;
                 //console.log(clips);
