@@ -263,11 +263,11 @@ function run() {
                     var upload_timer = 0;
                     let now = new Date();
                     let elapsed = (now - past);
-                    if (elapsed < 300) {
-                        elapsed = 300;
+                    if (elapsed < 500) {
+                        elapsed = 500;
                     }
-                    if (elapsed > 4000) {
-                        elapsed = 4000;
+                    if (elapsed > 5000) {
+                        elapsed = 50000;
                     }
                     past = now;
                     for (var i = 0; i < arena_tagged_clips_x.length; i++) {
