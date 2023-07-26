@@ -228,7 +228,7 @@ function run() {
                         } else {
                             last_word = current_full_text_splitted[current_full_text_splitted.length - 1];
                         }
-                        last_word = last_word.replace(/^[\ \,\.\:\;\"\'\(\)\-]+/, "").replace(/[\ \,\.\:\;\"\'\(\)\-]+$/, "");
+                        last_word = last_word.replace(/^[\ \,\.\:\;\"\'\(\)\-]+/, "").replace(/[\ \,\.\:\;\"\'\(\)\-]+$/, "").replace(/\ /, "   ");
                         last_word_upper = last_word.toLocaleUpperCase();
                     }
                     if (nextSlideText !== "") {
@@ -246,7 +246,7 @@ function run() {
                         } else {
                             first_word = next_full_text_splitted[0];
                         }
-                        first_word = first_word.replace(/^[\ \,\.\:\;\"\'\(\)\-]+/, "").replace(/[\ \,\.\:\;\"\'\(\)\-]+$/, "");
+                        first_word = first_word.replace(/^[\ \,\.\:\;\"\'\(\)\-]+/, "").replace(/[\ \,\.\:\;\"\'\(\)\-]+$/, "").replace(/\ /, "   ");
                         first_word_upper = first_word.toLocaleUpperCase();
                     }
                     //console.log(currentSlideText);
