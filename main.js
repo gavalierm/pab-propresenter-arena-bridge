@@ -16,6 +16,7 @@ var configFilePath = 'env.json';
 var config = {}
 var global_connection_timer;
 var request = require('request');
+var past = 0;
 // Connection
 var arena_path_by_id = "/composition/clips/by-id";
 var arena_tagged_clips_x = [];
@@ -70,7 +71,7 @@ function findConfigurationFile() {
         // @TODO Add more somewhen in the future, if necessary
     ]
     if (process.platform === 'linux') {
-        pathsToTry.push(path.join(os.homedir(), ''))
+        pathsToTry.push(path.join(os.homedir(), ""))
     }
     if (process.platform === 'darwin') {
         pathsToTry.push(path.join(os.homedir(), 'Library/Preferences'))
@@ -148,13 +149,13 @@ function run() {
                     }
                     var content = data.ary;
                     //console.log(content[0]);
-                    var slideText = '';
-                    var full_text = '';
-                    var fullTextSplited = '';
-                    var first_word = '';
-                    var first_word_upper = '';
-                    var last_word = '';
-                    var last_word_upper = '';
+                    var slideText = "";
+                    var full_text = "";
+                    var fullTextSplited = "";
+                    var first_word = "";
+                    var first_word_upper = "";
+                    var last_word = "";
+                    var last_word_upper = "";
                     //
                     var slideArray = [];
                     var snd_obj = {};
@@ -165,21 +166,24 @@ function run() {
                     for (var i = 0; i < content.length; i++) {
                         //console.log(content[i]);
                         if (content[i].acn == "cs") {
-                            //console.log("ACN CS", content[i].txt);
-                            if (content[i].txt) {
-                                slideText = content[i].txt + "";
+                            if (content[i].txt !== undefined) {
+                                //console.log("EXECUTED");
+                                //
+                                slideText = content[i].txt;
+                                //
+                                slideText = slideText.trim();
+                                //
+                                slideText = slideText.replace(/^\x82+|\x82+$/gm, "");
+                                //
+                                slideText = slideText.replace(/^\r+|\r+$/gm, "");
+                                //add br
+                                slideText = slideText.replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n");
                             }
+                            //console.log("ACN CS", typeof content[i].txt, content[i].txt.length, content[i].txt.trim().length);
                         }
                     }
-                    if (slideText != '') {
-                        //
-                        slideText = slideText.trim();
-                        //
-                        slideText = slideText.replace(/^\x82+|\x82+$/gm, '');
-                        //
-                        slideText = slideText.replace(/^\r+|\r+$/gm, '');
-                        //add br
-                        slideText = slideText.replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n");
+                    if (slideText !== "") {
+                        //console.log("DO");
                         //
                         slideArray = slideText.split("\r").reverse();
                         //
@@ -187,20 +191,29 @@ function run() {
                         full_text = slideArray.join("\r");
                         //first last
                         fullTextSplited = full_text.split(' ');
-                        first_word = '';
-                        if (fullTextSplited[0].length < 4) {
+                        first_word = "";
+                        if (fullTextSplited[0].length < 5) {
                             first_word = fullTextSplited[0] + ' ' + fullTextSplited[1];
                             first_word_upper = first_word.toLocaleUpperCase();
                         } else {
                             first_word = fullTextSplited[0];
                         }
+                        first_word = first_word.replace(/^[\ \,\.\:\;]+/, "").replace(/[\ \,\.\:\;]+$/, "");
                         first_word_upper = first_word.toLocaleUpperCase();
-                        last_word = '';
-                        if (fullTextSplited[fullTextSplited.length - 1].length < 4) {
+                        //
+                        last_word = "";
+                        if (fullTextSplited[fullTextSplited.length - 1].length < 5) {
                             last_word = fullTextSplited[fullTextSplited.length - 2] + ' ' + fullTextSplited[fullTextSplited.length - 1];
+                            if (fullTextSplited[fullTextSplited.length - 2] == "ma" || fullTextSplited[fullTextSplited.length - 2] == "sa") {
+                                last_word = fullTextSplited[fullTextSplited.length - 1];
+                            }
+                            if (fullTextSplited[fullTextSplited.length - 2] == "to") {
+                                last_word = fullTextSplited[fullTextSplited.length - 3] + ' ' + fullTextSplited[fullTextSplited.length - 2] + ' ' + fullTextSplited[fullTextSplited.length - 1];
+                            }
                         } else {
                             last_word = fullTextSplited[fullTextSplited.length - 1];
                         }
+                        last_word = last_word.replace(/^[\ \,\.\:\;]+/, "").replace(/[\ \,\.\:\;]+$/, "");
                         last_word_upper = last_word.toLocaleUpperCase();
                     }
                     //console.log(slideText);
@@ -215,8 +228,18 @@ function run() {
                     //
                     //var index = key.split('-');
                     //slideText = slideArray[parseInt(index[1], 10) - 1];
-                    //slideText = (slideText) ? slideText : '';
-                    var textForThisClip = '';
+                    //slideText = (slideText) ? slideText : "";
+                    var textForThisClip = "";
+                    var upload_timer = 0;
+                    let now = new Date();
+                    let elapsed = (now - past);
+                    if (elapsed < 200) {
+                        elapsed = 200;
+                    }
+                    if (elapsed > 2000) {
+                        elapsed = 2000;
+                    }
+                    past = now;
                     for (var i = 0; i < arena_tagged_clips_x.length; i++) {
                         //
                         clip_id = arena_tagged_clips_x[i];
@@ -242,8 +265,14 @@ function run() {
                         if (arena_tagged_clips_L.includes(clip_id)) {
                             textForThisClip = last_word_upper;
                         }
+                        //console.log("textForThisClip", textForThisClip);
                         snd_obj = { "video": { "sourceparams": { "Text": textForThisClip } } };
                         //
+                        upload_timer = 0;
+                        if (arena_tagged_clips_l.includes(clip_id) || arena_tagged_clips_L.includes(clip_id)) {
+                            upload_timer = Math.round(elapsed - (elapsed / 2));
+                            console.log("THICK", elapsed, upload_timer);
+                        }
                         setTimeout(function(target, id, obj) {
                             request({ url: target + '/' + id, method: 'PUT', json: obj }, function(error, response, body) {
                                 //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
@@ -258,7 +287,7 @@ function run() {
                                     //console.log(response.statusCode, "Arena: Upload OK");
                                 }
                             });
-                        }, 0, target_url, clip_id, snd_obj);
+                        }, upload_timer, target_url, clip_id, snd_obj);
                         //
                         if (arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_b.includes(clip_id)) {
                             setTimeout(function(target, id, obj) {
