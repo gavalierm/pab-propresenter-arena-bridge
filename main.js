@@ -24,6 +24,8 @@ var arena_tagged_clips_1 = [];
 var arena_tagged_clips_2 = [];
 var arena_tagged_clips_a = [];
 var arena_tagged_clips_b = [];
+var arena_tagged_clips_A = [];
+var arena_tagged_clips_B = [];
 var arena_tagged_clips_f = [];
 var arena_tagged_clips_l = [];
 var arena_tagged_clips_F = [];
@@ -209,6 +211,7 @@ function run() {
                         //
                         //fulltext
                         current_full_text = currentSlideArray.join("\r");
+                        current_full_text_upper = current_full_text.toLocaleUpperCase();
                         //first last
                         current_full_text_splitted = current_full_text.split(' ');
                         //
@@ -224,7 +227,7 @@ function run() {
                         } else {
                             last_word = current_full_text_splitted[current_full_text_splitted.length - 1];
                         }
-                        last_word = last_word.replace(/^[\ \,\.\:\;]+/, "").replace(/[\ \,\.\:\;]+$/, "");
+                        last_word = last_word.replace(/^[\ \,\.\:\;\"\'\(\)\-]+/, "").replace(/[\ \,\.\:\;\"\'\(\)\-]+$/, "");
                         last_word_upper = last_word.toLocaleUpperCase();
                     }
                     if (nextSlideText !== "") {
@@ -243,7 +246,7 @@ function run() {
                         } else {
                             first_word = next_full_text_splitted[0];
                         }
-                        first_word = first_word.replace(/^[\ \,\.\:\;]+/, "").replace(/[\ \,\.\:\;]+$/, "");
+                        first_word = first_word.replace(/^[\ \,\.\:\;\"\'\(\)\-]+/, "").replace(/[\ \,\.\:\;\"\'\(\)\-]+$/, "");
                         first_word_upper = first_word.toLocaleUpperCase();
                     }
                     //console.log(currentSlideText);
@@ -285,6 +288,12 @@ function run() {
                         //
                         textForThisClip = current_full_text;
                         //
+                        if (arena_tagged_clips_A.includes(clip_id)) {
+                            textForThisClip = current_full_text_upper;
+                        }
+                        if (arena_tagged_clips_B.includes(clip_id)) {
+                            textForThisClip = current_full_text_upper;
+                        }
                         if (arena_tagged_clips_f.includes(clip_id)) {
                             textForThisClip = first_word;
                         }
@@ -480,6 +489,8 @@ function getTaggedClips(tag = "#pab") {
             console.log("clips X", arena_tagged_clips_x);
             console.log("clips A", arena_tagged_clips_a);
             console.log("clips B", arena_tagged_clips_b);
+            console.log("clips AA", arena_tagged_clips_a);
+            console.log("clips BB", arena_tagged_clips_b);
             console.log("clips F", arena_tagged_clips_f);
             console.log("clips L", arena_tagged_clips_l);
             console.log("clips FF", arena_tagged_clips_F);
