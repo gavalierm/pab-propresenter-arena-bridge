@@ -149,15 +149,19 @@ function run() {
                     }
                     var content = data.ary;
                     //console.log(content[0]);
-                    var slideText = "";
-                    var full_text = "";
-                    var fullTextSplited = "";
+                    var currentSlideText = "";
+                    var nextSlideText = "";
+                    var current_full_text = "";
+                    var current_full_text_splitted = "";
+                    var next_full_text = "";
+                    var next_full_text_splitted = "";
                     var first_word = "";
                     var first_word_upper = "";
                     var last_word = "";
                     var last_word_upper = "";
                     //
-                    var slideArray = [];
+                    var currentSlideArray = [];
+                    var nextSlideArray = [];
                     var snd_obj = {};
                     var clip_id = 0;
                     var working_clips = [];
@@ -169,54 +173,80 @@ function run() {
                             if (content[i].txt !== undefined) {
                                 //console.log("EXECUTED");
                                 //
-                                slideText = content[i].txt;
+                                currentSlideText = content[i].txt;
                                 //
-                                slideText = slideText.trim();
+                                currentSlideText = currentSlideText.trim();
                                 //
-                                slideText = slideText.replace(/^\x82+|\x82+$/gm, "");
+                                currentSlideText = currentSlideText.replace(/^\x82+|\x82+$/gm, "");
                                 //
-                                slideText = slideText.replace(/^\r+|\r+$/gm, "");
+                                currentSlideText = currentSlideText.replace(/^\r+|\r+$/gm, "");
                                 //add br
-                                slideText = slideText.replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n");
+                                currentSlideText = currentSlideText.replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n");
+                            }
+                            //console.log("ACN CS", typeof content[i].txt, content[i].txt.length, content[i].txt.trim().length);
+                        }
+                        if (content[i].acn == "ns") {
+                            if (content[i].txt !== undefined) {
+                                //console.log("EXECUTED");
+                                //
+                                nextSlideText = content[i].txt;
+                                //
+                                nextSlideText = nextSlideText.trim();
+                                //
+                                nextSlideText = nextSlideText.replace(/^\x82+|\x82+$/gm, "");
+                                //
+                                nextSlideText = nextSlideText.replace(/^\r+|\r+$/gm, "");
+                                //add br
+                                nextSlideText = nextSlideText.replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n");
                             }
                             //console.log("ACN CS", typeof content[i].txt, content[i].txt.length, content[i].txt.trim().length);
                         }
                     }
-                    if (slideText !== "") {
+                    if (currentSlideText !== "") {
                         //console.log("DO");
                         //
-                        slideArray = slideText.split("\r").reverse();
+                        currentSlideArray = currentSlideText.split("\r").reverse();
                         //
                         //fulltext
-                        full_text = slideArray.join("\r");
+                        current_full_text = currentSlideArray.join("\r");
                         //first last
-                        fullTextSplited = full_text.split(' ');
-                        first_word = "";
-                        if (fullTextSplited[0].length < 5) {
-                            first_word = fullTextSplited[0] + ' ' + fullTextSplited[1];
-                            first_word_upper = first_word.toLocaleUpperCase();
-                        } else {
-                            first_word = fullTextSplited[0];
-                        }
-                        first_word = first_word.replace(/^[\ \,\.\:\;]+/, "").replace(/[\ \,\.\:\;]+$/, "");
-                        first_word_upper = first_word.toLocaleUpperCase();
+                        current_full_text_splitted = current_full_text.split(' ');
                         //
                         last_word = "";
-                        if (fullTextSplited[fullTextSplited.length - 1].length < 5) {
-                            last_word = fullTextSplited[fullTextSplited.length - 2] + ' ' + fullTextSplited[fullTextSplited.length - 1];
-                            if (fullTextSplited[fullTextSplited.length - 2] == "ma" || fullTextSplited[fullTextSplited.length - 2] == "sa") {
-                                last_word = fullTextSplited[fullTextSplited.length - 1];
+                        if (current_full_text_splitted[current_full_text_splitted.length - 1].length < 5) {
+                            last_word = current_full_text_splitted[current_full_text_splitted.length - 2] + ' ' + current_full_text_splitted[current_full_text_splitted.length - 1];
+                            if (current_full_text_splitted[current_full_text_splitted.length - 2] == "ma" || current_full_text_splitted[current_full_text_splitted.length - 2] == "sa") {
+                                last_word = current_full_text_splitted[current_full_text_splitted.length - 1];
                             }
-                            if (fullTextSplited[fullTextSplited.length - 2] == "to") {
-                                last_word = fullTextSplited[fullTextSplited.length - 3] + ' ' + fullTextSplited[fullTextSplited.length - 2] + ' ' + fullTextSplited[fullTextSplited.length - 1];
+                            if (current_full_text_splitted[current_full_text_splitted.length - 2] == "to") {
+                                last_word = current_full_text_splitted[current_full_text_splitted.length - 3] + ' ' + current_full_text_splitted[current_full_text_splitted.length - 2] + ' ' + current_full_text_splitted[current_full_text_splitted.length - 1];
                             }
                         } else {
-                            last_word = fullTextSplited[fullTextSplited.length - 1];
+                            last_word = current_full_text_splitted[current_full_text_splitted.length - 1];
                         }
                         last_word = last_word.replace(/^[\ \,\.\:\;]+/, "").replace(/[\ \,\.\:\;]+$/, "");
                         last_word_upper = last_word.toLocaleUpperCase();
                     }
-                    //console.log(slideText);
+                    if (nextSlideText !== "") {
+                        //console.log("DO");
+                        //
+                        nextSlideArray = nextSlideText.split("\r").reverse();
+                        //
+                        //fulltext
+                        next_full_text = nextSlideArray.join("\r");
+                        //first last
+                        next_full_text_splitted = next_full_text.split(' ');
+                        first_word = "";
+                        if (next_full_text_splitted[0].length < 5) {
+                            first_word = next_full_text_splitted[0] + ' ' + next_full_text_splitted[1];
+                            first_word = first_word.toLocaleUpperCase();
+                        } else {
+                            first_word = next_full_text_splitted[0];
+                        }
+                        first_word = first_word.replace(/^[\ \,\.\:\;]+/, "").replace(/[\ \,\.\:\;]+$/, "");
+                        first_word_upper = first_word.toLocaleUpperCase();
+                    }
+                    //console.log(currentSlideText);
                     var target_url = 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id;
                     //
                     if (turn_ab) {
@@ -227,17 +257,17 @@ function run() {
                     //
                     //
                     //var index = key.split('-');
-                    //slideText = slideArray[parseInt(index[1], 10) - 1];
-                    //slideText = (slideText) ? slideText : "";
+                    //currentSlideText = slideArray[parseInt(index[1], 10) - 1];
+                    //currentSlideText = (currentSlideText) ? currentSlideText : "";
                     var textForThisClip = "";
                     var upload_timer = 0;
                     let now = new Date();
                     let elapsed = (now - past);
-                    if (elapsed < 200) {
-                        elapsed = 200;
+                    if (elapsed < 300) {
+                        elapsed = 300;
                     }
-                    if (elapsed > 2000) {
-                        elapsed = 2000;
+                    if (elapsed > 4000) {
+                        elapsed = 4000;
                     }
                     past = now;
                     for (var i = 0; i < arena_tagged_clips_x.length; i++) {
@@ -251,7 +281,7 @@ function run() {
                             continue;
                         }
                         //
-                        textForThisClip = full_text;
+                        textForThisClip = current_full_text;
                         //
                         if (arena_tagged_clips_f.includes(clip_id)) {
                             textForThisClip = first_word;
@@ -269,8 +299,8 @@ function run() {
                         snd_obj = { "video": { "sourceparams": { "Text": textForThisClip } } };
                         //
                         upload_timer = 0;
-                        if (arena_tagged_clips_l.includes(clip_id) || arena_tagged_clips_L.includes(clip_id)) {
-                            upload_timer = Math.round(elapsed - (elapsed / 2));
+                        if (arena_tagged_clips_f.includes(clip_id) || arena_tagged_clips_F.includes(clip_id) || arena_tagged_clips_l.includes(clip_id) || arena_tagged_clips_L.includes(clip_id)) {
+                            upload_timer = Math.round(((elapsed / 4) * 2) - (elapsed / 4));
                             console.log("THICK", elapsed, upload_timer);
                         }
                         setTimeout(function(target, id, obj) {
