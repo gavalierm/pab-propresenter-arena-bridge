@@ -267,7 +267,7 @@ function run() {
                         elapsed = 500;
                     }
                     if (elapsed > 5000) {
-                        elapsed = 50000;
+                        elapsed = 5000;
                     }
                     past = now;
                     for (var i = 0; i < arena_tagged_clips_x.length; i++) {
