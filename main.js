@@ -220,6 +220,13 @@ function run() {
                     for (var i = 0; i < arena_tagged_clips_x.length; i++) {
                         //
                         clip_id = arena_tagged_clips_x[i];
+                        if (turn_ab && arena_tagged_clips_b.includes(clip_id)) {
+                            //onsole.log("SKIP turn A for", clip_id);
+                            continue;
+                        } else if (!turn_ab && arena_tagged_clips_a.includes(clip_id)) {
+                            //console.log("SKIP turn B for", clip_id);
+                            continue;
+                        }
                         //
                         textForThisClip = full_text;
                         //
@@ -254,13 +261,6 @@ function run() {
                         }, 0, target_url, clip_id, snd_obj);
                         //
                         if (arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_b.includes(clip_id)) {
-                            if (turn_ab && arena_tagged_clips_b.includes(clip_id)) {
-                                //onsole.log("SKIP turn A for", clip_id);
-                                continue;
-                            } else if (!turn_ab && arena_tagged_clips_a.includes(clip_id)) {
-                                //console.log("SKIP turn B for", clip_id);
-                                continue;
-                            }
                             setTimeout(function(target, id, obj) {
                                 request({ url: target + '/' + id + '/connect', method: 'POST', json: true }, function(error, response, body) {
                                     //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
