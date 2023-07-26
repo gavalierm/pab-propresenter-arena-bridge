@@ -263,7 +263,8 @@ function run() {
                     var upload_timer = 0;
                     let now = new Date();
                     let elapsed = (now - past);
-                    elapsed = Math.round(((elapsed / 4) * 2) - (elapsed / 4));
+                    console.log("elapsed bef", elapsed);
+                    elapsed = Math.round((elapsed / 4) * 2);
                     if (elapsed < 500) {
                         elapsed = 500;
                     }
@@ -302,8 +303,8 @@ function run() {
                         upload_timer = 0;
                         if (arena_tagged_clips_f.includes(clip_id) || arena_tagged_clips_F.includes(clip_id) || arena_tagged_clips_l.includes(clip_id) || arena_tagged_clips_L.includes(clip_id)) {
                             upload_timer = elapsed;
-                            console.log("THICK", elapsed, upload_timer);
                         }
+                        console.log("THICK", upload_timer);
                         setTimeout(function(target, id, obj) {
                             request({ url: target + '/' + id, method: 'PUT', json: obj }, function(error, response, body) {
                                 //request({ url: 'http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path, method: 'PUT', json: snd_obj }, function(error, response, body) {
