@@ -243,7 +243,6 @@ function run() {
                         first_word = "";
                         if (next_full_text_splitted[0].length < 5) {
                             first_word = next_full_text_splitted[0] + ' ' + next_full_text_splitted[1];
-                            first_word = first_word.toLocaleUpperCase();
                         } else {
                             first_word = next_full_text_splitted[0];
                         }
@@ -272,19 +271,22 @@ function run() {
                     if (elapsed < 500) {
                         elapsed = 500;
                     }
-                    if (elapsed > 5000) {
-                        elapsed = 5000;
+                    if (elapsed > 500) {
+                        elapsed = 500;
                     }
                     past = now;
                     for (var i = 0; i < arena_tagged_clips_x.length; i++) {
                         //
                         clip_id = arena_tagged_clips_x[i];
-                        if ((turn_ab && arena_tagged_clips_b.includes(clip_id)) || (turn_ab && arena_tagged_clips_B.includes(clip_id))) {
-                            //onsole.log("SKIP turn A for", clip_id);
-                            continue;
-                        } else if ((!turn_ab && arena_tagged_clips_a.includes(clip_id)) || (!turn_ab && arena_tagged_clips_A.includes(clip_id))) {
-                            //console.log("SKIP turn B for", clip_id);
-                            continue;
+                        if(turn_ab){
+                            if(arena_tagged_clips_b.includes(clip_id) || arena_tagged_clips_B.includes(clip_id)){
+                                continue;
+                            }
+                        }
+                        if(!turn_ab){
+                            if(arena_tagged_clips_a.includes(clip_id) || arena_tagged_clips_A.includes(clip_id)){
+                                continue;
+                            }
                         }
                         //
                         textForThisClip = current_full_text;
@@ -304,7 +306,7 @@ function run() {
                         if (arena_tagged_clips_L.includes(clip_id)) {
                             textForThisClip = last_word_upper;
                         }
-                        //console.log("textForThisClip", textForThisClip);
+                        console.log("textForThisClip", textForThisClip);
                         snd_obj = { "video": { "sourceparams": { "Text": textForThisClip } } };
                         //
                         upload_timer = 0;
