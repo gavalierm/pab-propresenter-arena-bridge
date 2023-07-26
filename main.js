@@ -154,6 +154,7 @@ function run() {
                     var currentSlideText = "";
                     var nextSlideText = "";
                     var current_full_text = "";
+                    var current_full_text_upper = "";
                     var current_full_text_splitted = "";
                     var next_full_text = "";
                     var next_full_text_splitted = "";
@@ -364,6 +365,8 @@ function clearTagged() {
     arena_tagged_clips_x = [];
     arena_tagged_clips_a = [];
     arena_tagged_clips_b = [];
+    arena_tagged_clips_A = [];
+    arena_tagged_clips_B = [];
     arena_tagged_clips_f = [];
     arena_tagged_clips_l = [];
     arena_tagged_clips_F = [];
@@ -394,6 +397,8 @@ function getTaggedClips(tag = "#pab") {
             let pattern_2 = /#pab-2/;
             let pattern_a = /#pab-a/;
             let pattern_b = /#pab-b/;
+            let pattern_A = /#pab-A/;
+            let pattern_B = /#pab-B/;
             let pattern_f = /#pab-f/;
             let pattern_l = /#pab-l/;
             let pattern_F = /#pab-F/;
@@ -408,6 +413,8 @@ function getTaggedClips(tag = "#pab") {
                         let result_2 = clips[x].name.value.match(pattern_2);
                         let result_a = clips[x].name.value.match(pattern_a);
                         let result_b = clips[x].name.value.match(pattern_b);
+                        let result_a = clips[x].name.value.match(pattern_A);
+                        let result_b = clips[x].name.value.match(pattern_B);
                         let result_f = clips[x].name.value.match(pattern_f);
                         let result_l = clips[x].name.value.match(pattern_l);
                         let result_F = clips[x].name.value.match(pattern_F);
@@ -451,6 +458,22 @@ function getTaggedClips(tag = "#pab") {
                             }
                             arena_tagged_clips_b.push(clips[x].id);
                         }
+                        if (result_A) {
+                            //result_n = parseInt(result_n[0], 10);
+                            //result_n = result_n[0];
+                            if (arena_tagged_clips_A === undefined) {
+                                arena_tagged_clips_A = [];
+                            }
+                            arena_tagged_clips_A.push(clips[x].id);
+                        }
+                        if (result_B) {
+                            //result_n = parseInt(result_n[0], 10);
+                            //result_n = result_n[0];
+                            if (arena_tagged_clips_B === undefined) {
+                                arena_tagged_clips_B = [];
+                            }
+                            arena_tagged_clips_B.push(clips[x].id);
+                        }
                         if (result_f) {
                             //result_n = parseInt(result_n[0], 10);
                             //result_n = result_n[0];
@@ -489,8 +512,8 @@ function getTaggedClips(tag = "#pab") {
             console.log("clips X", arena_tagged_clips_x);
             console.log("clips A", arena_tagged_clips_a);
             console.log("clips B", arena_tagged_clips_b);
-            console.log("clips AA", arena_tagged_clips_a);
-            console.log("clips BB", arena_tagged_clips_b);
+            console.log("clips AA", arena_tagged_clips_A);
+            console.log("clips BB", arena_tagged_clips_B);
             console.log("clips F", arena_tagged_clips_f);
             console.log("clips L", arena_tagged_clips_l);
             console.log("clips FF", arena_tagged_clips_F);
