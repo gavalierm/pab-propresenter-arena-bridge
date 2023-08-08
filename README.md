@@ -8,6 +8,14 @@ Node.js wrapper contains 2 parts:
 
 App wait for trigger event from ProPresenter API and when is fired reads the "current slide" data and this data immediatelly PIT into Arena Text source.
 
+# You need node.js on your computer
+You need node.js on your computer to run this. 
+- For MacOS users:
+You need developer tools too (apple way to run console apps).
+When you run "git clone https://github.com/gavalierm/propresenter-arena-bridge.git" in folder where you want to install this and you do not have developer tools installed MacOS will force you to install it. (no worry it is safe). After instalation (take a while) you need run "git clone" command again.
+- For Windows users:
+I do not have windows but i think you need download and install node.js from https://nodejs.org/en
+
 # Basic setup and usecase
 1. enable ProPresenter Stage Display API under network tab (and insert password)
 2. enable WEB server API in Arena settings (select some port like 8090)
