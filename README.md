@@ -6,7 +6,7 @@ Node.js wrapper contains 2 parts:
 - ProPresenter stage display API, which is websocket connection
 - Arena HTTP connection, which is REST API
 
-App wait for trigger event from ProPresenter API and when is fired reads the "current slide" data and this data immediatelly PIT into Arena Text source.
+App wait for trigger event from ProPresenter API and when is fired reads the "current slide" and "next slide" data, parse it and send PUT request into Resolume Arena Text Block (or animator) source.
 
 # You need node.js on your computer
 You need node.js on your computer to run this. 
@@ -24,6 +24,8 @@ I do not have windows but i think you need download and install node.js from htt
 5. run app in terminal like "node main.js"
 
 App will be search for clips with "#pab" whitin name and remember it.
+
+NOTE: If you change "#pab" clip, add more, remove some ... you need to restart the script.
 
 # Advanced setup and usecase
 Almost same as Basic setup but:
