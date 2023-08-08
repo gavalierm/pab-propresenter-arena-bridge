@@ -21,12 +21,12 @@ App will be search for clips with "#pab" whitin name and remember it.
 Almost same as Basic setup but:
 You can have this variations of #pab tag in name
 - #pab-a/#pab-b : used for auto ping-pong triggering
--- if you want to use arena transition between slides
-- #pab-1,#pab-2,#pab-(...) : each number means each text object in propresenter slide
+-- if you want to use arena transition between slides, you need this. Note: Arena trigger change focus, when "clip is triggered". So this means that you still being to loose focus on selected cliip... (try it). I open the ticket with Resolume to solve this on their API.
+- #pab-A/#pab-B : same as "a/b" but with auto upppercase transform
+- #pab-f/#pab-l : f means first word of slide, l means last word of slide
+- #pab-F/#pab-L : same as "f/l" but with auto upppercase transform
+- #pab-1,#pab-2 : each number means each text object in propresenter slide
 -- if you have 2 text object in one slide and you want to have two different looks for each text object, you can add one clip with tag #pab-1 and second with #pab-2
 
-# Disclaimer
-If you want you can use this library freely but i do not plan to maintain. It is dirty working solution for our small needs. If you want to collaborate or maintain this, you are welcome.
-
-# Support
-If you want you can support me at https://paypal.me/MarcelGavalier
+# Support and License
+This script is free for use such as churches, educational platforms, charity events, etc. If you want to use paid events like concerts, conferences, etc., be grateful and send some "thank you" via https://paypal.me/MarcelGavalier
