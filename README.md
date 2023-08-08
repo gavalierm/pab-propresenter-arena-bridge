@@ -22,9 +22,9 @@ Almost same as Basic setup but:
 You can have this variations of #pab tag in name
 - #pab-a/#pab-b : used for auto ping-pong triggering
 -- if you want to use arena transition between slides, you need this. Note: Arena trigger change focus, when "clip is triggered". So this means that you still being to loose focus on selected cliip... (try it). I open the ticket with Resolume to solve this on their API.
-- #pab-A/#pab-B : same as "a/b" but with auto upppercase transform
+- #pab-A/#pab-B : same as "a/b" but with auto uppercase transform
 - #pab-f/#pab-l : f means first word of slide, l means last word of slide
-- #pab-F/#pab-L : same as "f/l" but with auto upppercase transform
+- #pab-F/#pab-L : same as "f/l" but with auto uppercase transform
 - #pab-1,#pab-2 : each number means each text object in propresenter slide
 -- if you have 2 text object in one slide and you want to have two different looks for each text object, you can add one clip with tag #pab-1 and second with #pab-2
 
