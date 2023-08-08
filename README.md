@@ -29,4 +29,4 @@ You can have this variations of #pab tag in name
 -- if you have 2 text object in one slide and you want to have two different looks for each text object, you can add one clip with tag #pab-1 and second with #pab-2
 
 # Support and License
-This script is free for use such as churches, educational platforms, charity events, etc. If you want to use paid events like concerts, conferences, etc., be grateful and send some "thank you" via https://paypal.me/MarcelGavalier
+This script is free for scenarios such as churches, educational platforms, charity events, etc. If you want to use paid events like concerts, conferences, etc., be grateful and send some "thank you" via https://paypal.me/MarcelGavalier
