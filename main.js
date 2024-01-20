@@ -308,6 +308,13 @@ function run() {
                                 textForThisClip = '';
                             }
                         }
+                        if (arena_tagged_clips_3.includes(clip_id)) {
+                            if (currentSlideArray[2] !== undefined) {
+                                textForThisClip = currentSlideArray[2];
+                            } else {
+                                textForThisClip = '';
+                            }
+                        }
                         if (arena_tagged_clips_A.includes(clip_id) || arena_tagged_clips_B.includes(clip_id)) {
                             textForThisClip = current_full_text_upper;
                         }
