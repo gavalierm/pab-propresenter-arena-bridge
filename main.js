@@ -12,17 +12,20 @@ console.log('Setup config.json file according to the credentials in Arena and Pr
 console.log('Add "#pab" to the clip name in Resolume Arena which cointains "Text Block" source');
 console.log('')
 console.log('\nExample modificators:\n');
-console.log('#pab-uc : UPPERCASE');
-console.log('#pab-lc : lovercase');
-console.log('#pab-cp : Caps Each Word');
+console.log('-uc : UPPERCASE');
+console.log('-lc : lovercase');
+console.log('-cp : Caps Each Word');
 console.log('')
 console.log('\nExample manipulators:\n');
-console.log('#pab-fw : First word only');
-console.log('#pab-lw : Last word only');
+console.log('-fw : First word only');
+console.log('-lw : Last word only');
+console.log('')
+console.log('\nExample block:\n');
+console.log('-1,2..n : "1,2,.." means Slide first or second or nth text block only');
 console.log('')
 console.log('\nExample triggers:\nTriggers for "Zig-Zag" triggering.\n');
-console.log('#pab-a : "a" means odd');
-console.log('#pab-b : "b" means even');
+console.log('-a : "a" means odd');
+console.log('-b : "b" means even');
 console.log('')
 console.log('Tags can be combined (order is not relevant):\n')
 console.log('#pab-a-uc-fw')
@@ -394,7 +397,7 @@ async function arena_determine_clips() {
 }
 
 async function execute_pab_bridge_trigger(id) {
-    console.log("execute_pab_bridge_trigger", id)
+    //console.log("execute_pab_bridge_trigger", id)
     try {
         const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + id + '/connect', { method: 'POST', body: '' });
         //const response = await fetch('https://api.github.com/users/github');
@@ -414,7 +417,7 @@ async function execute_pab_bridge_trigger(id) {
 }
 
 async function arena_update_clip(id, text) {
-    console.log("arena_update_clip", id)
+    //console.log("arena_update_clip", id)
     let obj = {
         method: 'PUT',
         body: JSON.stringify({ "video": { "sourceparams": { "Text": text } } }),
@@ -452,6 +455,7 @@ async function execute_pab_bridge(slide) {
     let arena_scheduled_clips = []
     let actual
     let same_layer_triger_protect = false
+    let update_count = 0;
     //
     for (var i = 0; i < arena.length; i++) {
         //console.log('LAYER %d\n', i)
@@ -472,7 +476,7 @@ async function execute_pab_bridge(slide) {
                     //enable protection
                     same_layer_triger_protect = true;
                 } else {
-                    console.warn("Arena: Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!!")
+                    console.warn("Arena: Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! Layer = '%d' Clip = '%s'", i, clip.name)
                     //skip whole clip
                     continue;
                 }
@@ -489,6 +493,7 @@ async function execute_pab_bridge(slide) {
 
             if (actual.txt == undefined || actual.txt == '') {
                 //just clear the clip
+                update_count++
                 arena_update_clip(clip.id, '')
                 continue;
             }
@@ -500,6 +505,7 @@ async function execute_pab_bridge(slide) {
                     actual = actual.segments[clip.params.block]
                 } else {
                     // block is wanted but not present, clear clip
+                    update_count++
                     arena_update_clip(clip.id, '')
                     continue;
                 }
@@ -540,21 +546,24 @@ async function execute_pab_bridge(slide) {
 
             if (text_for_clip == undefined) {
                 console.warn("UNDEFINED TEXT", actual)
+                update_count++
                 arena_update_clip(clip.id, '')
                 continue;
             }
 
             //update clip
+            update_count++
             arena_update_clip(clip.id, text_for_clip)
 
         }
     }
 
-    //console.log("\n\nArena: Execute Triggers count=%d\n", arena_scheduled_clips.length)
+    console.log("Arena: Uptates count=%d", update_count)
+    console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
     for (var i = 0; i < arena_scheduled_clips.length; i++) {
         execute_pab_bridge_trigger(arena_scheduled_clips[i])
     }
-    //console.log("\n\n\n\n")
+    console.log("\n\n")
 }
 
 arena_connect()
