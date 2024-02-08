@@ -24,6 +24,11 @@ console.log('\nExample triggers:\nTriggers for "Zig-Zag" triggering.\n');
 console.log('#pab-a : "a" means odd');
 console.log('#pab-b : "b" means even');
 console.log('')
+console.log('Tags can be combined (order is not relevant):\n')
+console.log('#pab-a-uc-fw')
+console.log('#pab-fw-uc-a')
+console.log('#pab-uc-a-fw')
+console.log('All is the same.')
 console.log('===============================\n');
 
 //
@@ -46,7 +51,7 @@ var propresenter_state = 'disconnected';
 var arena_check_timeout;
 var propresenter_check_timeout;
 //
-var arena_clips = []
+var arena = []
 //cycle for odd/event
 var cycle = false;
 // chema "x" means default
@@ -191,14 +196,14 @@ function propresenter_slide_segments(segments) {
             uc: segments[i].toLocaleUpperCase(),
             lc: segments[i].toLocaleLowerCase(),
             cp: segments[i].toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-            f: first_word,
-            f_uc: first_word.toLocaleUpperCase(),
-            f_lc: first_word.toLocaleLowerCase(),
-            f_cp: first_word.toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-            l: last_word, 
-            l_uc: last_word.toLocaleUpperCase(),
-            l_lc: last_word.toLocaleLowerCase(),
-            l_cp: last_word.toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+            fw: first_word,
+            fw_uc: first_word.toLocaleUpperCase(),
+            fw_lc: first_word.toLocaleLowerCase(),
+            fw_cp: first_word.toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
+            lw: last_word, 
+            lw_uc: last_word.toLocaleUpperCase(),
+            lw_lc: last_word.toLocaleLowerCase(),
+            lw_cp: last_word.toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
         })
     }
     //
@@ -307,7 +312,7 @@ async function arena_connect() {
 }
 
 async function arena_determine_clips() {
-    console.log("determine_arena_clips");
+    console.log("determine_arena");
     //
     // arena have http api so we dont know if is on or not we use check state before
     if (arena_state != 'connected') {
@@ -343,29 +348,32 @@ async function arena_determine_clips() {
         return arena_reconnect();
     }
 
+    let layer
     let clips
     let clip
     let clip_name_pab
     //reset global
-    arena_clips = []
+    arena = []
+    clips = []
     //
     // layers from top to bottom
     // top layers is more important
     for (var i = data.layers.length - 1; i >= 0; i--) {
         //travers all layers
-        clips = data.layers[i].clips;
+        layer = data.layers[i].clips;
+        clips = []
         //console.log(clips);
-        for (var x = 0; x < clips.length; x++) {
+        for (var x = 0; x < layer.length; x++) {
             //travers all clips in layer
-            if (clips[x].name == undefined || clips[x].name.value == undefined || clips[x].name.value == '' || !clips[x].name.value.includes("#pab")) {
+            if (layer[x].name == undefined || layer[x].name.value == undefined || layer[x].name.value == '' || !layer[x].name.value.includes("#pab")) {
                 //skip clip because don have pab tag
                 continue;
             }
-            clip_name_pab = clips[x].name.value.match(/#pab\S*/g)[0]
+            clip_name_pab = layer[x].name.value.match(/#pab\S*/g)[0]
             //
             clip = {
-                id: clips[x].id,
-                name: clips[x].name.value,
+                id: layer[x].id,
+                name: layer[x].name.value,
                 params: {
                     block: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/g)[0] : null,
                     uc: (clip_name_pab.match(/.*\-uc.*/g)) ? true : false,
@@ -378,10 +386,11 @@ async function arena_determine_clips() {
                 }
             }
             // now we populate array with objects
-            arena_clips.push(clip)
+            clips.push(clip)
         }
+        arena.push(clips)
     }
-    console.log(arena_clips)
+    console.log(arena)
 }
 
 async function execute_pab_bridge_trigger(id) {
@@ -432,98 +441,120 @@ async function arena_update_clip(id, text) {
 async function execute_pab_bridge(slide) {
     //console.log('execute_pab_bridge', slide);
     //now we need populate all clips according to their params
-    if (arena_clips.length == 0) {
+    if (arena.length == 0) {
         console.log("execute_pab_bridge", "No clips")
         return;
     }
     //
     let clip
+    let layer
     let text_for_clip = ''
     let arena_scheduled_clips = []
     let actual
+    let same_layer_triger_protect = false
     //
-    for (var i = 0; i < arena_clips.length; i++) {
-        //slide
-        clip = arena_clips[i]
-        if ((clip.params.a && cycle == true) || (clip.params.b && cycle == false)) {
-            //chedule for trigger
-            arena_scheduled_clips.push(clip.id)
-        }
+    for (var i = 0; i < arena.length; i++) {
+        console.log('LAYER %d\n', i)
+        //layers
+        layer = arena[i]
+        // disable protection for triggering on same page
+        same_layer_triger_protect = false
+        //
+        for (var x = 0; x < layer.length; x++) {
+            //slide
+            console.log('\n\tclip %d', x)
+            clip = layer[x]
+            if ((clip.params.a && cycle == true) || (clip.params.b && cycle == false)) {
+                //chedule for trigger
+                if (same_layer_triger_protect == false) {
+                    console.warn("Arena: Trigger scheduled")
+                    arena_scheduled_clips.push(clip.id)
+                    //enable protection
+                    same_layer_triger_protect = true;
+                } else {
+                    console.warn("Arena: PROTECTION SKIP Trigger scheduled")
+                    //skip whole clip
+                    continue;
+                }
+                
+            }
 
-        // determine cycle
-        if (clip.params.a && cycle == false || clip.params.b && cycle == true) {
-            // if clip is in for oposite cylcle skip update
-            continue;
-        } else {
-            actual = slide.current
-        }
-
-        if (actual.txt == undefined || actual.txt == '') {
-            //just clear the clip
-            arena_update_clip(clip.id, '')
-            continue;
-        }
-
-        // check if the clip wants specific segment
-        if (clip.params.block) {
-            if (actual.segments && actual.segments[clip.params.block]) {
-                console.log("SET Specific segment", clip.params.block)
-                actual = actual.segments[clip.params.block]
+            // determine cycle
+            if (clip.params.a && cycle == false || clip.params.b && cycle == true) {
+                // if clip is in for oposite cylcle skip update
+                continue;
             } else {
-                // block is wanted but not present, clear clip
+                actual = slide.current
+            }
+
+            if (actual.txt == undefined || actual.txt == '') {
+                //just clear the clip
                 arena_update_clip(clip.id, '')
                 continue;
             }
-        } else {
-            // clip do not want specific segment we beed 
-        }
-        //
 
-        //manipulators
-        if (clip.params.f) {
-            text_for_clip = actual.f
-            if (clip.params.uc) {
-                text_for_clip = actual.f_uc
-            } else if (clip.params.lc) {
-                text_for_clip = actual.f_lc
-            } else if (clip.params.cp) {
-                text_for_clip = actual.f_cp
+            // check if the clip wants specific segment
+            if (clip.params.block) {
+                if (actual.segments && actual.segments[clip.params.block]) {
+                    console.log("SET Specific segment", clip.params.block)
+                    actual = actual.segments[clip.params.block]
+                } else {
+                    // block is wanted but not present, clear clip
+                    arena_update_clip(clip.id, '')
+                    continue;
+                }
+            } else {
+                // clip do not want specific segment we beed 
             }
-        } else if (clip.params.l) {
-            text_for_clip = actual.l
-            if (clip.params.uc) {
-                text_for_clip = actual.l_uc
-            } else if (clip.params.lc) {
-                text_for_clip = actual.l_lc
-            } else if (clip.params.cp) {
-                text_for_clip = actual.l_cp
+            //
+
+            //manipulators
+            if (clip.params.fw) {
+                text_for_clip = actual.fw
+                if (clip.params.uc) {
+                    text_for_clip = actual.fw_uc
+                } else if (clip.params.lc) {
+                    text_for_clip = actual.fw_lc
+                } else if (clip.params.cp) {
+                    text_for_clip = actual.fw_cp
+                }
+            } else if (clip.params.lw) {
+                text_for_clip = actual.lw
+                if (clip.params.uc) {
+                    text_for_clip = actual.lw_uc
+                } else if (clip.params.lc) {
+                    text_for_clip = actual.lw_lc
+                } else if (clip.params.cp) {
+                    text_for_clip = actual.lw_cp
+                }
+            } else {
+                text_for_clip = actual.txt
+                if (clip.params.uc) {
+                    text_for_clip = actual.uc
+                } else if (clip.params.lc) {
+                    text_for_clip = actual.lc
+                } else if (clip.params.cp) {
+                    text_for_clip = actual.cp
+                }
             }
-        } else {
-            text_for_clip = actual.txt
-            if (clip.params.uc) {
-                text_for_clip = actual.uc
-            } else if (clip.params.lc) {
-                text_for_clip = actual.lc
-            } else if (clip.params.cp) {
-                text_for_clip = actual.cp
+
+            if (text_for_clip == undefined) {
+                console.warn("UNDEFINED TEXT", actual)
+                arena_update_clip(clip.id, '')
+                continue;
             }
+
+            //update clip
+            arena_update_clip(clip.id, text_for_clip)
+
         }
-
-        if (text_for_clip == undefined) {
-            console.warn("UNDEFINED TEXT", actual)
-            arena_update_clip(clip.id, '')
-            continue;
-        }
-
-        //update clip
-        arena_update_clip(clip.id, text_for_clip)
-
     }
 
+    console.log("\n\nArena: Execute Triggers count=%d\n", arena_scheduled_clips.length)
     for (var i = 0; i < arena_scheduled_clips.length; i++) {
         execute_pab_bridge_trigger(arena_scheduled_clips[i])
     }
-    
+    console.log("\n\n\n\n")
 }
 
 arena_connect()
