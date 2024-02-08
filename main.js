@@ -40,6 +40,8 @@ import os from 'os'
 import fs from 'fs';
 import fetch from 'node-fetch'
 import WebSocket from 'ws';
+import { setgid } from 'process';
+import { clear } from 'console';
 //
 let config
 let config_default
@@ -380,7 +382,7 @@ async function arena_determine_clips() {
                 id: layer[x].id,
                 name: layer[x].name.value,
                 params: {
-                    block: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/g)[0] : null,
+                    block: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
                     uc: (clip_name_pab.match(/.*\-uc.*/g)) ? true : false,
                     lc: (clip_name_pab.match(/.*\-lc.*/g)) ? true : false,
                     cp: (clip_name_pab.match(/.*\-cp.*/g)) ? true : false,
@@ -398,24 +400,27 @@ async function arena_determine_clips() {
     console.log(arena[0])
 }
 
-async function execute_pab_bridge_trigger(id) {
-    //console.log("execute_pab_bridge_trigger", id)
-    try {
-        const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + id + '/connect', { method: 'POST', body: '' });
-        //const response = await fetch('https://api.github.com/users/github');
-        if (!response.ok) {
-            console.error("Arena: Trigger failed");
-            return;
+async function execute_pab_bridge_triggers(clips) {
+
+    for (var i = 0; i < clips.length; i++) {
+        //
+        console.log("execute_pab_bridge_triggers", clips[i])
+        try {
+            const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clips[i] + '/connect', { method: 'POST', body: '' });
+            //const response = await fetch('https://api.github.com/users/github');
+            if (!response.ok) {
+                console.error("Arena: Trigger failed");
+                continue;
+                //return arena_reconnect();
+            }
+            continue;
+            //
+        } catch (error) {
+            console.error("Arena: Connection error", error);
+            continue;
             //return arena_reconnect();
         }
-        return;
-        //
-    } catch (error) {
-        console.error("Arena: Connection error", error);
-        return;
-        //return arena_reconnect();
     }
-
 }
 
 async function arena_update_clip(id, text) {
@@ -443,6 +448,7 @@ async function arena_update_clip(id, text) {
     }
 }
 
+let execute_pab_bridge_triggers_timeout
 async function execute_pab_bridge(slide) {
     //console.log('execute_pab_bridge', slide);
     //now we need populate all clips according to their params
@@ -458,6 +464,7 @@ async function execute_pab_bridge(slide) {
     let actual
     let same_layer_triger_protect = false
     let update_count = 0;
+    let specific = 0
     //
     for (var i = 0; i < arena.length; i++) {
         //console.log('LAYER %d\n', i)
@@ -502,13 +509,20 @@ async function execute_pab_bridge(slide) {
 
             // check if the clip wants specific segment
             if (clip.params.block) {
-                if (actual.segments && actual.segments[clip.params.block]) {
-                    console.log("SET Specific segment", clip.params.block)
-                    actual = actual.segments[clip.params.block]
+                console.log("WANTED Specific segment", clip.params.block, actual.segments)
+                specific = parseInt(clip.params.block, 10) - 1
+
+                if ((actual.segments == undefined && specific == 0) || (actual.segments && actual.segments.length == 0 && specific == 0)) {
+                    console.log("SET Specific segment DEFAULT")
+                    actual = actual
+                } else if (actual.segments && actual.segments[specific]) {
+                    console.log("SET Specific segment SPECIFIC")
+                    actual = actual.segments[specific]
                 } else {
                     // block is wanted but not present, clear clip
-                    update_count++
-                    arena_update_clip(clip.id, '')
+                    console.log("SET Specific segment CLEAR")
+                    //update_count++
+                    //arena_update_clip(clip.id, '')
                     continue;
                 }
             } else {
@@ -558,13 +572,21 @@ async function execute_pab_bridge(slide) {
             arena_update_clip(clip.id, text_for_clip)
 
         }
+        execute_pab_bridge_triggers(arena_scheduled_clips)
+        arena_scheduled_clips = []
     }
 
     console.log("Arena: Uptates count=%d", update_count)
     console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
-    for (var i = 0; i < arena_scheduled_clips.length; i++) {
-        execute_pab_bridge_trigger(arena_scheduled_clips[i])
-    }
+    //
+    //execute_pab_bridge_triggers(arena_scheduled_clips)
+    /*
+    execute_pab_bridge_triggers_timeout = setTimeout(function () {
+        clearTimeout(execute_pab_bridge_triggers_timeout)
+        
+    }, 5)
+    */
+    //
     console.log("\n\n")
 }
 
