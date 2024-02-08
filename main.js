@@ -397,7 +397,7 @@ async function arena_determine_clips() {
         }
         arena.push(clips)
     }
-    console.log(arena[0])
+    console.log(arena)
 }
 
 async function execute_pab_bridge_triggers(clips) {
