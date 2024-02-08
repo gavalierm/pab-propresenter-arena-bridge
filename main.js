@@ -454,7 +454,7 @@ async function execute_pab_bridge(slide) {
     let same_layer_triger_protect = false
     //
     for (var i = 0; i < arena.length; i++) {
-        console.log('LAYER %d\n', i)
+        //console.log('LAYER %d\n', i)
         //layers
         layer = arena[i]
         // disable protection for triggering on same page
@@ -462,17 +462,17 @@ async function execute_pab_bridge(slide) {
         //
         for (var x = 0; x < layer.length; x++) {
             //slide
-            console.log('\n\tclip %d', x)
+            //console.log('\n\tclip %d', x)
             clip = layer[x]
             if ((clip.params.a && cycle == true) || (clip.params.b && cycle == false)) {
                 //chedule for trigger
                 if (same_layer_triger_protect == false) {
-                    console.warn("Arena: Trigger scheduled")
+                    //console.warn("Arena: Trigger scheduled")
                     arena_scheduled_clips.push(clip.id)
                     //enable protection
                     same_layer_triger_protect = true;
                 } else {
-                    console.warn("Arena: PROTECTION SKIP Trigger scheduled")
+                    console.warn("Arena: Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!!")
                     //skip whole clip
                     continue;
                 }
@@ -550,11 +550,11 @@ async function execute_pab_bridge(slide) {
         }
     }
 
-    console.log("\n\nArena: Execute Triggers count=%d\n", arena_scheduled_clips.length)
+    //console.log("\n\nArena: Execute Triggers count=%d\n", arena_scheduled_clips.length)
     for (var i = 0; i < arena_scheduled_clips.length; i++) {
         execute_pab_bridge_trigger(arena_scheduled_clips[i])
     }
-    console.log("\n\n\n\n")
+    //console.log("\n\n\n\n")
 }
 
 arena_connect()
