@@ -379,8 +379,8 @@ async function arena_determine_clips() {
                     uc: (clip_name_pab.match(/.*\-uc.*/g)) ? true : false,
                     lc: (clip_name_pab.match(/.*\-lc.*/g)) ? true : false,
                     cp: (clip_name_pab.match(/.*\-cp.*/g)) ? true : false,
-                    f: (clip_name_pab.match(/.*\-fw.*/g)) ? true : false,
-                    l: (clip_name_pab.match(/.*\-lw.*/g)) ? true : false,
+                    fw: (clip_name_pab.match(/.*\-fw.*/g)) ? true : false,
+                    lw: (clip_name_pab.match(/.*\-lw.*/g)) ? true : false,
                     a: (clip_name_pab.match(/.*\-a.*/g)) ? true : false,
                     b: (clip_name_pab.match(/.*\-b.*/g)) ? true : false
                 }
@@ -390,7 +390,7 @@ async function arena_determine_clips() {
         }
         arena.push(clips)
     }
-    console.log(arena)
+    console.log(arena[0])
 }
 
 async function execute_pab_bridge_trigger(id) {
