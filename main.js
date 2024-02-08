@@ -404,7 +404,7 @@ async function execute_pab_bridge_triggers(clips) {
 
     for (var i = 0; i < clips.length; i++) {
         //
-        console.log("execute_pab_bridge_triggers", clips[i])
+        //console.log("execute_pab_bridge_triggers", clips[i])
         try {
             const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clips[i] + '/connect', { method: 'POST', body: '' });
             //const response = await fetch('https://api.github.com/users/github');
@@ -448,7 +448,7 @@ async function arena_update_clip(id, text) {
     }
 }
 
-let execute_pab_bridge_triggers_timeout
+let execute_pab_bridge_triggers_timeout = []
 async function execute_pab_bridge(slide) {
     //console.log('execute_pab_bridge', slide);
     //now we need populate all clips according to their params
@@ -503,13 +503,13 @@ async function execute_pab_bridge(slide) {
             if (actual.txt == undefined || actual.txt == '') {
                 //just clear the clip
                 update_count++
-                arena_update_clip(clip.id, '')
+                await arena_update_clip(clip.id, '')
                 continue;
             }
 
             // check if the clip wants specific segment
             if (clip.params.block) {
-                console.log("WANTED Specific segment", clip.params.block, actual.segments)
+                //console.log("WANTED Specific segment", clip.params.block, actual.segments)
                 specific = parseInt(clip.params.block, 10) - 1
 
                 if ((actual.segments == undefined && specific == 0) || (actual.segments && actual.segments.length == 0 && specific == 0)) {
@@ -563,29 +563,26 @@ async function execute_pab_bridge(slide) {
             if (text_for_clip == undefined) {
                 console.warn("UNDEFINED TEXT", actual)
                 update_count++
-                arena_update_clip(clip.id, '')
+                await arena_update_clip(clip.id, '')
                 continue;
             }
 
             //update clip
             update_count++
-            arena_update_clip(clip.id, text_for_clip)
+            await arena_update_clip(clip.id, text_for_clip)
 
         }
-        execute_pab_bridge_triggers(arena_scheduled_clips)
+        execute_pab_bridge_triggers_timeout[i] = setTimeout(function (arg_clips) {
+            clearTimeout(execute_pab_bridge_triggers_timeout[i])
+            execute_pab_bridge_triggers(arg_clips)
+        }, 5, arena_scheduled_clips)
+        console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
         arena_scheduled_clips = []
     }
 
     console.log("Arena: Uptates count=%d", update_count)
-    console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
     //
     //execute_pab_bridge_triggers(arena_scheduled_clips)
-    /*
-    execute_pab_bridge_triggers_timeout = setTimeout(function () {
-        clearTimeout(execute_pab_bridge_triggers_timeout)
-        
-    }, 5)
-    */
     //
     console.log("\n\n")
 }
