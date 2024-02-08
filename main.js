@@ -24,14 +24,14 @@ console.log('\nExample block:\n');
 console.log('-1,2..n : "1,2,.." means Slide first or second or nth text block only');
 console.log('')
 console.log('\nExample triggers:\nTriggers for "Zig-Zag" triggering.\n');
-console.log('-a : "a" means odd');
-console.log('-b : "b" means even');
+console.log('-a : "a" means trigger only on odd');
+console.log('-b : "b" means trigger only on even');
 console.log('')
 console.log('Tags can be combined (order is not relevant):\n')
 console.log('#pab-a-uc-fw')
 console.log('#pab-fw-uc-a')
 console.log('#pab-uc-a-fw')
-console.log('All is the same.')
+console.log('\nAll is the same.\n')
 console.log('===============================\n');
 
 //
