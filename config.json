@@ -1,0 +1,14 @@
+ {
+  "arena":
+  {
+    "host": "localhost",
+    "port": 8090,
+    "pass": "not used"
+  },
+  "propresenter":
+  {
+    "host": "localhost",
+    "port": 1024,
+    "pass": "stage"
+  }
+ }
