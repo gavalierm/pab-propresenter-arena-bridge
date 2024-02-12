@@ -1,10 +1,6 @@
 # PAB - ProPresenter Arena Bridge
 
-This script interconnect the ProPresenter and Resolume Arena.
-
-Because the ProPresenter can send TEXT content from slide using /stage API endpoint and the Resolume Arena can receive text content via HTTP Webserver API - we can interconnect this two APIs via Proxy script.
-
-So we can can manipulate fonts, size, animations, effects on ProPresenter slide inside the arena. And this is HUGE benefit.
+The purpose is to use ProPresenter as a source of text content and control for Resolume, where Resolume renders the text itself instead of using screen capture, Spout, NDI or similar.
 
 
 ## How it works
