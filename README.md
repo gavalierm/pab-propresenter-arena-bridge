@@ -9,7 +9,7 @@ Script connect to the ProPresenter Websocket API (/stage endpoint) and wait for 
 
 When slide is triggered the Script read the text from the slide and PUT this text into Resolume Arena "TextBlock" source.
 
-If the clip cointains "auto trigger flags", the script trigger the clip automaticaly.
+If the clip contains "auto trigger flags", the script trigger the clip automaticaly.
 
 
 ## What you need
