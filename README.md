@@ -1,12 +1,15 @@
-# PAB - ProPresenter Arena Bridge
+# PAB - ProPresenter and Resolume Arena Bridge
 
-The purpose is to use ProPresenter as a source of text content and control for Resolume, where Resolume renders the text itself instead of using screen capture, Spout, NDI or similar.
+The purpose is to use ProPresenter as a source of text content and control for Resolume Arena, where Resolume Arena renders the text itself instead of using screen capture, Spout, NDI or similar.
 
 
 ## How it works
 
 Script connect to the ProPresenter Websocket API (/stage endpoint) and wait for slide trigger.
+
 When slide is triggered the Script read the text from the slide and PUT this text into Resolume Arena "TextBlock" source.
+
+If the clip cointains "auto trigger flags", the script trigger the clip automaticaly.
 
 
 ## What you need
@@ -63,7 +66,7 @@ Note: This works in conjuction with "Block selection". First/Last word is always
 Note: This is helpfull if your slide contains more then one text block. You cen select which textblock you can populate into this clip.
 
 
-#### Example triggers for "Zig-Zag" triggering:
+#### Example auto triggers for "Zig-Zag" triggering:
 
 - -a : "a" means trigger only on odd
 - -b : "b" means trigger only on even
