@@ -18,12 +18,12 @@ When slide is triggered the Script read the text from the slide and PUT this tex
 You need node.js on your computer to run this script
 
 - For MacOS users:
- - You need developer tools too (apple way to run console apps).
- - clone the repo
- - execute 'node main.js'
+- - You need developer tools too (apple way to run console apps).
+- - clone the repo
+- - execute 'node main.js'
 - For Windows users:
- - I do not have windows but i think you need download and install node.js from https://nodejs.org/en
- - just run main app via Node.js runtime app
+- - I do not have windows but i think you need download and install node.js from https://nodejs.org/en
+- - just run main app via Node.js runtime app
 
 
 ## Basic setup and usecase
