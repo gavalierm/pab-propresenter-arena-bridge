@@ -41,6 +41,7 @@ NOTE: If you change "#pab" clip, add more, remove some ... you need to restart t
 
 PAB script have some builtin features to enhance the work flow.
 
+
 #### Example modificators:
 
 - -uc : UPPERCASE
@@ -49,6 +50,7 @@ PAB script have some builtin features to enhance the work flow.
 
 Note: Ease pre-formating of text. Because Resolume Arena can not do this yet.
 
+
 #### Example manipulators:
 
 - -fw : First word only
@@ -56,11 +58,13 @@ Note: Ease pre-formating of text. Because Resolume Arena can not do this yet.
 
 Note: This works in conjuction with "Block selection". First/Last word is always from selected block. No-block means whole slide.
 
+
 #### Example block:
 
-- -1,2..n : "1,2,.." means Slide first or second or nth text block only
+- -1,..n : Means only first text block (or nth text block) of Slide
 
 Note: This is helpfull if your slide contains more then one text block. You cen select which textblock you can populate into this clip.
+
 
 #### Example triggers for "Zig-Zag" triggering:
 
@@ -69,15 +73,19 @@ Note: This is helpfull if your slide contains more then one text block. You cen 
 
 Note: This is very helpfull (or must-have) if you want to use Resolume Arena transitions between slides. Clip A acting as prev and stay untouched. Clip B acting as actual slide and will be populated with actual slide text. Ater transitions the A will act as prev and B as actual. This will be cycled forever.
 
-#### Tags can be combined (order is not relevant)
+
+#### Tags can be combined:
 
 - #pab-a-uc-fw
 - #pab-fw-uc-a
 - #pab-uc-a-fw
-- #pab-uc-a-fw-1
-- #pab-uc-a-fw-2
 
-Note: All is the same.
+Note: Order is not relevant. In this example all clips will have same content, format and trigger on A cycle.
+
+
+#### Next slide content:
+
+- -ns : Means content from "Next slide", default is "Current slide" (without any special flag)
 
 
 ## Support and License
