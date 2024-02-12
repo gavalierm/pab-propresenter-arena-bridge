@@ -572,10 +572,10 @@ async function execute_pab_bridge(slide) {
             await arena_update_clip(clip.id, text_for_clip)
 
         }
-        execute_pab_bridge_triggers_timeout[i] = setTimeout(function (arg_clips) {
-            clearTimeout(execute_pab_bridge_triggers_timeout[i])
+        execute_pab_bridge_triggers_timeout[i] = setTimeout(function (arg_clips, arg_timeout_index) {
+            clearTimeout(execute_pab_bridge_triggers_timeout[arg_timeout_index])
             execute_pab_bridge_triggers(arg_clips)
-        }, 5, arena_scheduled_clips)
+        }, 5, arena_scheduled_clips, i)
         console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
         arena_scheduled_clips = []
     }
