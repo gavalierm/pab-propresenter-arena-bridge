@@ -252,7 +252,7 @@ function propresenter_determine_slide(data) {
                     // reverse order
                     //split = txt.split("\r").reverse()
                     // stadnard order
-                    split = txt.split("\r").reverse()
+                    split = txt.split("\r")
                     txt = split.join("\r")
                     //
                     slide.current = propresenter_slide_segments([txt])[0]
