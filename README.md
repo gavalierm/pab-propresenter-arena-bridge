@@ -40,7 +40,7 @@ NOTE: If you change "#pab" clip, add more, remove some ... you need to restart t
 
 PAB script have some builtin features to enhance the work flow.
 
-Example modificators:
+#### Example modificators:
 
 - -uc : UPPERCASE
 - -lc : lovercase
@@ -48,27 +48,27 @@ Example modificators:
 
 Note: Ease pre-formating of text. Because Resolume Arena can not do this yet.
 
-Example manipulators:
+#### Example manipulators:
 
 - -fw : First word only
 - -lw : Last word only
 
 Note: This works in conjuction with "Block selection". First/Last word is always from selected block. No-block means whole slide.
 
-Example block:
+#### Example block:
 
 - -1,2..n : "1,2,.." means Slide first or second or nth text block only
 
 Note: This is helpfull if your slide contains more then one text block. You cen select which textblock you can populate into this clip.
 
-Example triggers for "Zig-Zag" triggering:
+#### Example triggers for "Zig-Zag" triggering:
 
 - -a : "a" means trigger only on odd
 - -b : "b" means trigger only on even
 
 Note: This is very helpfull (or must-have) if you want to use Resolume Arena transitions between slides. Clip A acting as prev and stay untouched. Clip B acting as actual slide and will be populated with actual slide text. Ater transitions the A will act as prev and B as actual. This will be cycled forever.
 
-Tags can be combined (order is not relevant)
+#### Tags can be combined (order is not relevant)
 
 - #pab-a-uc-fw
 - #pab-fw-uc-a
