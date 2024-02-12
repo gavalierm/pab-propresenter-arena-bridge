@@ -250,6 +250,8 @@ function propresenter_determine_slide(data) {
                     // optimalisation
                     txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
                     // reverse order
+                    //split = txt.split("\r").reverse()
+                    // stadnard order
                     split = txt.split("\r").reverse()
                     txt = split.join("\r")
                     //
@@ -265,7 +267,9 @@ function propresenter_determine_slide(data) {
                     // optimalisation
                     txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
                     // reverse order
-                    split = txt.split("\r").reverse()
+                    //split = txt.split("\r").reverse()
+                    // standard order
+                    split = txt.split("\r")
                     txt = split.join("\r")
                     //
                     slide.next = propresenter_slide_segments([txt])[0]
@@ -388,7 +392,8 @@ async function arena_determine_clips() {
                     fw: (clip_name_pab.match(/.*\-fw.*/g)) ? true : false,
                     lw: (clip_name_pab.match(/.*\-lw.*/g)) ? true : false,
                     a: (clip_name_pab.match(/.*\-a.*/g)) ? true : false,
-                    b: (clip_name_pab.match(/.*\-b.*/g)) ? true : false
+                    b: (clip_name_pab.match(/.*\-b.*/g)) ? true : false,
+                    ns: (clip_name_pab.match(/.*\-ns.*/g)) ? true : false
                 }
             }
             // now we populate array with objects
