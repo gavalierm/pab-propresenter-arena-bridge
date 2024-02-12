@@ -27,10 +27,11 @@ You need node.js on your computer to run this script
 1. enable ProPresenter Stage Display API under network tab (and insert password)
 2. enable WEB server API in Arena settings (select some port like 8090)
 3. add TextBlock into Clip in Resolume Arena and add "#pab" into clip name (more hastags described bellow)
-4. edit env.json file in this app (if not exists copy one from env_default.json)
-5. run script in terminal like "node main.js"
+4. create a copy of config_default.json to config.json
+5. edit config.json credentials
+6. run script in terminal like "node path/to/file/main.js" (depends on platform)
 
-NOTE: If you change "#pab" clip, add more, remove some ... you need to restart the script to load new changes.
+NOTE: If you add more "#pab" clip or edit existing clips names relevant to the pab (modificators) ... you need to restart the script to apply new changes.
 
 
 ## Advanced setup and usecase
