@@ -393,6 +393,7 @@ async function arena_determine_clips() {
                     lw: (clip_name_pab.match(/.*\-lw.*/g)) ? true : false,
                     a: (clip_name_pab.match(/.*\-a.*/g)) ? true : false,
                     b: (clip_name_pab.match(/.*\-b.*/g)) ? true : false,
+                    //cs: (clip_name_pab.match(/.*\-cs.*/g)) ? true : false, //cs is default
                     ns: (clip_name_pab.match(/.*\-ns.*/g)) ? true : false
                 }
             }
@@ -503,7 +504,12 @@ async function execute_pab_bridge(slide) {
                 // if clip is in for oposite cylcle skip update
                 continue;
             } else {
-                actual = slide.current
+                if (clip.params.ns) {
+                    actual = slide.next
+                } else {
+                    actual = slide.current
+                }
+                
             }
 
             if (actual.txt == undefined || actual.txt == '') {
