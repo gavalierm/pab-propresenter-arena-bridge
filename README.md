@@ -6,7 +6,7 @@ The purpose is to use ProPresenter as a source of text content and control for R
 ## How it works
 
 Script connect to the ProPresenter Websocket API (/stage endpoint) and wait for slide trigger.
-When slide is triggered the Script read the text from the slide and PUT this text into Resolume Arena TEXT BLOCK elemenent.
+When slide is triggered the Script read the text from the slide and PUT this text into Resolume Arena "TextBlock" source.
 
 
 ## What you need
