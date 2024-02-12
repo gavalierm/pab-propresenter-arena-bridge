@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-//https://github.com/MarkPinches/knx
 console.log('===============================');
 console.log('   ProPresenter Arena bridge   ');
 console.log('===============================');
@@ -36,12 +35,12 @@ console.log('===============================\n');
 
 //
 //require('console')
-import os from 'os'
+//import os from 'os'
 import fs from 'fs';
 import fetch from 'node-fetch'
 import WebSocket from 'ws';
-import { setgid } from 'process';
-import { clear } from 'console';
+//import { setgid } from 'process';
+//import { clear } from 'console';
 //
 let config
 let config_default
@@ -395,7 +394,9 @@ async function arena_determine_clips() {
             // now we populate array with objects
             clips.push(clip)
         }
-        arena.push(clips)
+        if (clips.length > 0) {
+            arena.push(clips)
+        }     
     }
     console.log(arena)
 }
