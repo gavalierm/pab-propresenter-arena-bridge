@@ -73,6 +73,8 @@ Note: This is very helpfull (or must-have) if you want to use Resolume Arena tra
 - #pab-a-uc-fw
 - #pab-fw-uc-a
 - #pab-uc-a-fw
+- #pab-uc-a-fw-1
+- #pab-uc-a-fw-2
 
 Note: All is the same.
 
