@@ -126,7 +126,12 @@ function propresenter_connect() {
         data = data.toString()
         //check fv data before json parse to safe cpu
         if (data.includes('"acn":"ath"')) {
+            data = JSON.parse(data);
             console.log(data);
+            if (data && data.acn && !data.acn.ath) {
+                console.error("\n\n\nPropresenter: Auth failed\n\n\n")
+                return propresenter_reconnect();
+            }
             return;
         }
         if (!data.includes('"acn":"fv"')) {
