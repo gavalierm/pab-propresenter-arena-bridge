@@ -128,7 +128,7 @@ function propresenter_connect() {
         if (data.includes('"acn":"ath"')) {
             data = JSON.parse(data);
             console.log(data);
-            if (!data || !data.acn || !data.acn.ath) {
+            if (!data || !data.acn || !data.ath) {
                 console.error("\n\n\nPropresenter: Auth failed\n\n\n")
                 return propresenter_reconnect();
             }
