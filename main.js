@@ -202,17 +202,17 @@ function propresenter_slide_segments(segments) {
         //
         segments_.push({
             txt: segments[i],
-            uc: segments[i].toLocaleUpperCase(),
-            lc: segments[i].toLocaleLowerCase(),
-            cp: segments[i].toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
+            uc: segments[i].toUpperCase(),
+            lc: segments[i].toLowerCase(),
+            cp: segments[i].toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
             fw: first_word,
-            fw_uc: first_word.toLocaleUpperCase(),
-            fw_lc: first_word.toLocaleLowerCase(),
-            fw_cp: first_word.toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
+            fw_uc: first_word.toUpperCase(),
+            fw_lc: first_word.toLowerCase(),
+            fw_cp: first_word.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
             lw: last_word, 
-            lw_uc: last_word.toLocaleUpperCase(),
-            lw_lc: last_word.toLocaleLowerCase(),
-            lw_cp: last_word.toLocaleLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+            lw_uc: last_word.toUpperCase(),
+            lw_lc: last_word.toLowerCase(),
+            lw_cp: last_word.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
         })
     }
     //
@@ -256,7 +256,7 @@ function propresenter_determine_slide(data) {
                     txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
                     //replace non-printable char
                     txt.replace(/\u00a0/gm, " ");
-                    
+
                     // reverse order
                     //split = txt.split("\r").reverse()
                     // stadnard order
