@@ -557,33 +557,35 @@ async function execute_pab_bridge(slide) {
             //
 
             //manipulators
-            if (clip.params.fw) {
-                text_for_clip = actual.fw
-                if (clip.params.uc) {
+            text_for_clip = actual.txt
+            //
+            if (clip.params.uc) {
+                text_for_clip = actual.uc
+                if (clip.params.ne) {
+                    text_for_clip = actual.ne_uc
+                } else if (clip.params.fw) {
                     text_for_clip = actual.fw_uc
-                } else if (clip.params.lc) {
-                    text_for_clip = actual.fw_lc
-                } else if (clip.params.cp) {
-                    text_for_clip = actual.fw_cp
-                }
-            } else if (clip.params.lw) {
-                text_for_clip = actual.lw
-                if (clip.params.uc) {
+                } else if (clip.params.lw) {
                     text_for_clip = actual.lw_uc
-                } else if (clip.params.lc) {
+                } 
+            } else if (clip.params.lc) {
+                text_for_clip = actual.lc
+                if (clip.params.ne) {
+                    text_for_clip = actual.ne_lc
+                } else if (clip.params.fw) {
+                    text_for_clip = actual.fw_lc
+                } else if (clip.params.lw) {
                     text_for_clip = actual.lw_lc
-                } else if (clip.params.cp) {
+                } 
+            } else if (clip.params.cp) {
+                text_for_clip = actual.cp
+                if (clip.params.ne) {
+                    text_for_clip = actual.ne_cp
+                } else if (clip.params.fw) {
+                    text_for_clip = actual.fw_cp
+                } else if (clip.params.lw) {
                     text_for_clip = actual.lw_cp
-                }
-            } else {
-                text_for_clip = actual.txt
-                if (clip.params.uc) {
-                    text_for_clip = actual.uc
-                } else if (clip.params.lc) {
-                    text_for_clip = actual.lc
-                } else if (clip.params.cp) {
-                    text_for_clip = actual.cp
-                }
+                } 
             }
 
             if (text_for_clip == undefined) {
