@@ -203,6 +203,9 @@ function propresenter_slide_segments(segments) {
         segments_.push({
             txt: segments[i],
             re: segments[i].replace(/[\r\n]/g, " "),
+            re_uc: segments[i].replace(/[\r\n]/g, " ").toUpperCase(),
+            re_lc: segments[i].replace(/[\r\n]/g, " ").toLowerCase(),
+            re_cp: segments[i].replace(/[\r\n]/g, " ").toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
             uc: segments[i].toUpperCase(),
             lc: segments[i].toLowerCase(),
             cp: segments[i].toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
