@@ -202,7 +202,7 @@ function propresenter_slide_segments(segments) {
         //
         segments_.push({
             txt: segments[i],
-            ne: segments[i].replace(/[\r\n]/g, " "),
+            re: segments[i].replace(/[\r\n]/g, " "),
             uc: segments[i].toUpperCase(),
             lc: segments[i].toLowerCase(),
             cp: segments[i].toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
@@ -399,7 +399,7 @@ async function arena_determine_clips() {
                 name: layer[x].name.value,
                 params: {
                     block: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
-                    ne: (clip_name_pab.match(/.*\-ne.*/g)) ? true : false,
+                    re: (clip_name_pab.match(/.*\-re.*/g)) ? true : false,
                     uc: (clip_name_pab.match(/.*\-uc.*/g)) ? true : false,
                     lc: (clip_name_pab.match(/.*\-lc.*/g)) ? true : false,
                     cp: (clip_name_pab.match(/.*\-cp.*/g)) ? true : false,
