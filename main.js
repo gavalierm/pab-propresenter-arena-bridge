@@ -254,6 +254,9 @@ function propresenter_determine_slide(data) {
                 if (data.ary[i].txt !== '') {
                     // optimalisation
                     txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+                    //replace non-printable char
+                    txt.replace(/\u00a0/gm, " ");
+                    
                     // reverse order
                     //split = txt.split("\r").reverse()
                     // stadnard order
@@ -271,6 +274,10 @@ function propresenter_determine_slide(data) {
                 if (data.ary[i].txt !== '') {
                     // optimalisation
                     txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+                    
+                    //replace non-printable char
+                    txt.replace(/\u00a0/gm, " ");
+
                     // reverse order
                     //split = txt.split("\r").reverse()
                     // standard order
