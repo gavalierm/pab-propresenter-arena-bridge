@@ -540,6 +540,7 @@ async function execute_pab_bridge(slide) {
 
             if (actual.txt == undefined || actual.txt == '') {
                 //just clear the clip
+                console.log("CLEAR clip")
                 update_count++
                 await arena_update_clip(clip.id, '')
                 continue;
@@ -610,8 +611,6 @@ async function execute_pab_bridge(slide) {
                     text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
                 } 
             }
-
-
 
             if (text_for_clip == undefined) {
                 console.warn("UNDEFINED TEXT", actual)
