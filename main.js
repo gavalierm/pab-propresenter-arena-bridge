@@ -18,6 +18,9 @@ console.log('')
 console.log('\nExample manipulators:\n');
 console.log('-fw : First word only');
 console.log('-lw : Last word only');
+console.log('-re : Replace ENTER char to SPACE');
+console.log('-td : Trim dot "."');
+console.log('-tc : Trim comma ","');
 console.log('')
 console.log('\nExample block:\n');
 console.log('-1,2..n : "1,2,.." means Slide first or second or nth text block only');
@@ -202,6 +205,10 @@ function propresenter_slide_segments(segments) {
         //
         segments_.push({
             txt: segments[i],
+            td: segments[i].replace(/[\r\n]/g, " "),
+            td_uc: segments[i].replace(/[\r\n]/g, " ").toUpperCase(),
+            td_lc: segments[i].replace(/[\r\n]/g, " ").toLowerCase(),
+            td_cp: segments[i].replace(/[\r\n]/g, " ").toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
             re: segments[i].replace(/[\r\n]/g, " "),
             re_uc: segments[i].replace(/[\r\n]/g, " ").toUpperCase(),
             re_lc: segments[i].replace(/[\r\n]/g, " ").toLowerCase(),
@@ -402,6 +409,8 @@ async function arena_determine_clips() {
                 name: layer[x].name.value,
                 params: {
                     block: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
+                    rd: (clip_name_pab.match(/.*\-rd.*/g)) ? true : false,
+                    rc: (clip_name_pab.match(/.*\-rc.*/g)) ? true : false,
                     re: (clip_name_pab.match(/.*\-re.*/g)) ? true : false,
                     uc: (clip_name_pab.match(/.*\-uc.*/g)) ? true : false,
                     lc: (clip_name_pab.match(/.*\-lc.*/g)) ? true : false,
@@ -559,37 +568,50 @@ async function execute_pab_bridge(slide) {
             }
             //
 
-            //manipulators
+            //default text
             text_for_clip = actual.txt
             //
+
+            if (clip.params.fw) {
+                //first word only
+                text_for_clip = actual.fw
+            } else if (clip.params.lw) {
+                //last word only
+                text_for_clip = actual.lw
+            }
+
             if (clip.params.uc) {
-                text_for_clip = actual.uc
-                if (clip.params.ne) {
-                    text_for_clip = actual.ne_uc
-                } else if (clip.params.fw) {
-                    text_for_clip = actual.fw_uc
-                } else if (clip.params.lw) {
-                    text_for_clip = actual.lw_uc
-                } 
+                //uppercase
+                text_for_clip = text_for_clip.toUpperCase()
             } else if (clip.params.lc) {
-                text_for_clip = actual.lc
-                if (clip.params.ne) {
-                    text_for_clip = actual.ne_lc
-                } else if (clip.params.fw) {
-                    text_for_clip = actual.fw_lc
-                } else if (clip.params.lw) {
-                    text_for_clip = actual.lw_lc
-                } 
+                //lowercase
+                text_for_clip = text_for_clip.toLowerCase()
             } else if (clip.params.cp) {
-                text_for_clip = actual.cp
-                if (clip.params.ne) {
-                    text_for_clip = actual.ne_cp
-                } else if (clip.params.fw) {
-                    text_for_clip = actual.fw_cp
-                } else if (clip.params.lw) {
-                    text_for_clip = actual.lw_cp
+                //caps
+                text_for_clip = text_for_clip.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+            }
+
+            if (clip.params.re) {
+                //replace enter with space
+                text_for_clip = text_for_clip.replace(/[\r\n]/g, " ")
+            } 
+
+            if (clip.params.rd && clip.params.rc) {
+                //trim dot and comma
+                text_for_clip = text_for_clip.replace(/(^(\.|\,)+)|((\.|\,)+$)/g, "")
+            } else {
+                if (clip.params.rd) {
+                    //trim just dot
+                    text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
+                } 
+
+                if (clip.params.rc) {
+                    //trim just comma
+                    text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
                 } 
             }
+
+
 
             if (text_for_clip == undefined) {
                 console.warn("UNDEFINED TEXT", actual)
