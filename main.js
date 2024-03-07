@@ -560,9 +560,7 @@ async function execute_pab_bridge(slide) {
                 } else {
                     // block is wanted but not present, clear clip
                     console.log("SET Specific segment CLEAR")
-                    //update_count++
-                    //arena_update_clip(clip.id, '')
-                    continue;
+                    actual = ''
                 }
             } else {
                 // clip do not want specific segment we beed 
