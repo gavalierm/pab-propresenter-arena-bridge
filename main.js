@@ -42,6 +42,7 @@ console.log('===============================\n');
 import fs from 'fs';
 import fetch from 'node-fetch'
 import WebSocket from 'ws';
+import Gun from "gun";
 //import { setgid } from 'process';
 //import { clear } from 'console';
 //
@@ -53,7 +54,6 @@ const arena_path_by_id = "/composition/clips/by-id";
 //var config = {}
 //
 var arena_state = 'disconnected';
-var propresenter_state = 'disconnected';
 //
 var arena_check_timeout;
 var propresenter_check_timeout;
@@ -61,12 +61,6 @@ var propresenter_check_timeout;
 var arena = []
 //cycle for odd/event
 var cycle = false;
-// chema "x" means default
-// #pab-trigger-format-start_segment-end_segment
-// parameters are optional, but can not be skipped
-// #pab[-a[-uc[-3-10]]]
-// #pab-x-x-1-2
-// #pab-x-x
 
 // read file everytime if needed to change conf without restart the app
 function readConfiguration() {
@@ -74,7 +68,7 @@ function readConfiguration() {
         try {
             config_default = JSON.parse(fs.readFileSync('./config_default.json'))
             config = config_default
-            console.log("CONFIG DEFAULT", config)
+            //console.log("CONFIG DEFAULT", config)
         } catch (e) {
             console.log("No config default")
             return undefined
@@ -88,7 +82,7 @@ function readConfiguration() {
     } catch (e) {
         if (config_default) {
             config = config_default
-            console.log("CONFIG FROM DEFAULT", config)
+            //console.log("CONFIG FROM DEFAULT", config)
             return config
         }
         console.log("No config")
@@ -142,11 +136,15 @@ function propresenter_connect() {
         }
         //console.log(data);
         //var data = JSON.parse(message.utf8Data);
-        return propresenter_determine_slide(JSON.parse(data))
+        if (arena_state != 'connected') {
+            console.error("ProPresenter: Arena NOT connected")
+            return;
+        }
+        return propresenter_parse_slide(JSON.parse(data))
     });
 }
 
-function propresenter_get_first_word(words) {
+function parse_first_word(words) {
     //
     let word = ''
     let a = (words[0] !== undefined && words[0] !== '') ? words[0].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
@@ -155,7 +153,12 @@ function propresenter_get_first_word(words) {
         word = a;
     } else {
         let b = (words[1] !== undefined && words[1] !== '') ? words[1].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
-        word = a + ' ' + b
+        if (a == 'a' || a == 'A') {
+            word = b;
+        } else {
+            word = a + ' ' + b
+        }
+       
     }
     // add spaces between words to enhance effect
     word = word.replace(/^[\ ]+|[\ ]+$/gm, "").replace(/\ /, "   ");
@@ -163,7 +166,7 @@ function propresenter_get_first_word(words) {
     return word
 }
 
-function propresenter_get_last_word(words) {
+function parse_last_word(words) {
     //
     let word = ''
     let a = (words[words.length - 1] !== undefined && words[words.length - 1] !== '') ? words[words.length - 1].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
@@ -190,7 +193,7 @@ function propresenter_get_last_word(words) {
     //
     return word
 }
-function propresenter_slide_segments(segments) {
+function parse_slide_segments(segments) {
     //
     let segments_ = []
     //
@@ -200,37 +203,21 @@ function propresenter_slide_segments(segments) {
         //
         let words = segments[i].split(' ')
         //
-        let first_word = propresenter_get_first_word(words)
-        let last_word = propresenter_get_last_word(words)
-        //
+        let first_word = parse_first_word(words)
+        let last_word = parse_last_word(words)
+        //   
+        // manipulaciu robim pri uploade, potrebujem uz len txt, fw, lw
         segments_.push({
             txt: segments[i],
-            td: segments[i].replace(/[\r\n]/g, " "),
-            td_uc: segments[i].replace(/[\r\n]/g, " ").toUpperCase(),
-            td_lc: segments[i].replace(/[\r\n]/g, " ").toLowerCase(),
-            td_cp: segments[i].replace(/[\r\n]/g, " ").toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-            re: segments[i].replace(/[\r\n]/g, " "),
-            re_uc: segments[i].replace(/[\r\n]/g, " ").toUpperCase(),
-            re_lc: segments[i].replace(/[\r\n]/g, " ").toLowerCase(),
-            re_cp: segments[i].replace(/[\r\n]/g, " ").toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-            uc: segments[i].toUpperCase(),
-            lc: segments[i].toLowerCase(),
-            cp: segments[i].toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
             fw: first_word,
-            fw_uc: first_word.toUpperCase(),
-            fw_lc: first_word.toLowerCase(),
-            fw_cp: first_word.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()),
-            lw: last_word, 
-            lw_uc: last_word.toUpperCase(),
-            lw_lc: last_word.toLowerCase(),
-            lw_cp: last_word.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+            lw: last_word
         })
     }
     //
     return segments_;
 }
 
-function propresenter_determine_slide(data) {
+function propresenter_parse_slide(data) {
     //console.log("ProPresenter: Slide", data)
     //
     if (data.ary === undefined) {
@@ -274,10 +261,10 @@ function propresenter_determine_slide(data) {
                     split = txt.split("\r")
                     txt = split.join("\r")
                     //
-                    slide.current = propresenter_slide_segments([txt])[0]
+                    slide.current = parse_slide_segments([txt])[0]
                     //
                     if (split.length > 1) {
-                        slide.current.segments = propresenter_slide_segments(split)
+                        slide.current.segments = parse_slide_segments(split)
                     }
                 }
                 break;
@@ -295,10 +282,10 @@ function propresenter_determine_slide(data) {
                     split = txt.split("\r")
                     txt = split.join("\r")
                     //
-                    slide.next = propresenter_slide_segments([txt])[0]
+                    slide.next = parse_slide_segments([txt])[0]
                     //
                     if (split.length > 1) {
-                        slide.next.segments = propresenter_slide_segments(split)
+                        slide.next.segments = parse_slide_segments(split)
                     }
                 }
                 break;
@@ -306,13 +293,71 @@ function propresenter_determine_slide(data) {
     }
 
     //console.log(slide.current)
-
-    //reverse cycle on each slide
-    cycle = !cycle;
-    //
     return execute_pab_bridge(slide)
 }
 
+
+// gun connection
+// https://github.com/filiphanes/gun-overlays/tree/public
+function gun_connect() {
+    console.log("GUN: Connect")
+    config = readConfiguration()
+    let gun = Gun([config.gun_overlays.peer]);
+    let overlay = gun.get(config.gun_overlays.service).get(config.gun_overlays.namespace);
+    overlay.get('line2').on(function (data, key) {
+        gun_overlays_parse_slide(data);
+        //console.log(key, data);
+    });
+}
+
+async function gun_overlays_parse_slide(data) {
+    //console.log("GUN: Slide data ", data)
+    //
+    if (data === undefined) {
+        console.log("GUN: undefined data");
+        return;
+    }
+
+    let txt = ''
+    let split = []
+    
+    //hack for now
+    txt = data;
+    //translate data from gun_overlays to pab 
+
+    // struct
+    let slide = {
+        current: {
+            txt: '',
+            segments: [
+            ]
+        },
+        next: {
+            txt: '',
+            segments: [
+            ]
+        }
+    }
+
+    // optimalisation
+    txt = txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+    //replace non-printable char
+    txt = txt.replace(/\u00a0/gm, " ");
+
+    // reverse order
+    //split = txt.split("\r").reverse()
+    // stadnard order
+    split = txt.split("\r")
+    txt = split.join("\r")
+    //
+    slide.current = parse_slide_segments([txt])[0]
+    //
+    if (split.length > 1) {
+        slide.current.segments = parse_slide_segments(split)
+    }
+    //console.log(slide.current);
+    return execute_pab_bridge(slide)
+}
 
 
 
@@ -483,6 +528,9 @@ async function arena_update_clip(id, text) {
 
 let execute_pab_bridge_triggers_timeout = []
 async function execute_pab_bridge(slide) {
+    //reverse cycle on each slide
+    cycle = !cycle;
+    //
     //console.log('execute_pab_bridge', slide);
     //now we need populate all clips according to their params
     if (arena.length == 0) {
@@ -641,3 +689,4 @@ async function execute_pab_bridge(slide) {
 
 arena_connect()
 propresenter_connect()
+gun_connect()

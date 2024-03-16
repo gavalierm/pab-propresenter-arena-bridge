@@ -2,6 +2,7 @@
   "name": "PAB ProPresenter Arena Bridge",
   "description": "PAB is script for populate text from ProPresenter to Resolume Arena in real time",
   "dependencies": {
+    "gun": "^0.2020.1239",
     "node-fetch": "^3.3.2",
     "ws": "^8.16.0"
   },
