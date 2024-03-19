@@ -198,6 +198,8 @@ function parse_slide_segments(segments) {
     let segments_ = []
     //
     for (var i = 0; i < segments.length; i++) {
+        // trim new lines
+        segments[i] = segments[i].replace(/(^\n+)|(\n+$)/g, "")
         // first word ana last word is little tricky because wo cant read the words and we dont know the context
         // we use the litle trick to "join" common words with pre-words
         //
@@ -251,7 +253,7 @@ function propresenter_parse_slide(data) {
             case 'cs':
                 if (data.ary[i].txt !== '') {
                     // optimalisation
-                    txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+                    txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
                     //replace non-printable char
                     txt = txt.replace(/\u00a0/gm, " ");
 
@@ -271,7 +273,7 @@ function propresenter_parse_slide(data) {
             case 'ns':
                 if (data.ary[i].txt !== '') {
                     // optimalisation
-                    txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+                    txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
                     
                     //replace non-printable char
                     txt = txt.replace(/\u00a0/gm, " ");
@@ -299,30 +301,51 @@ function propresenter_parse_slide(data) {
 
 // gun connection
 // https://github.com/filiphanes/gun-overlays/tree/public
+var gan_allinone_last = '{}';
+var gan_shown_last = false;
 function gun_connect() {
     console.log("GUN: Connect")
     config = readConfiguration()
     let gun = Gun([config.gun_overlays.peer]);
     let overlay = gun.get(config.gun_overlays.service).get(config.gun_overlays.namespace);
-    overlay.get('line2').on(function (data, key) {
-        gun_overlays_parse_slide(data);
-        //console.log(key, data);
+    let data = overlay.get('allinone').on(function (data, key) {
+        if (data !== gan_allinone_last) {
+            gan_allinone_last = data
+            data = JSON.parse(data)
+            if (data.shown || (data.shown !== gan_shown_last)) {
+                gan_shown_last = data.shown
+                gun_overlays_parse_slide(data)
+            }
+           
+        }
+        //console.log("Last\n", allinone_last)
+        //console.log("\n\n", key, "\n");
+        //console.log(JSON.parse(data));
     });
+
+
 }
 
 async function gun_overlays_parse_slide(data) {
+
     //console.log("GUN: Slide data ", data)
     //
     if (data === undefined) {
         console.log("GUN: undefined data");
         return;
     }
+    //
+    //console.log("GUUUUUUUUUUUN\n", data)
 
     let txt = ''
     let split = []
     
     //hack for now
-    txt = data;
+    if (data.shown) {
+        txt = data.line1 + "\r\n" + data.line2 + "\r\n" + data.line3 + "\r\n" + data.line4;
+    }
+    
+    console.log("GUN: Slide txt ", txt)
     //translate data from gun_overlays to pab 
 
     // struct
@@ -340,7 +363,7 @@ async function gun_overlays_parse_slide(data) {
     }
 
     // optimalisation
-    txt = txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/^\r+|\r+$/gm, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+    txt = txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
     //replace non-printable char
     txt = txt.replace(/\u00a0/gm, " ");
 
@@ -349,6 +372,8 @@ async function gun_overlays_parse_slide(data) {
     // stadnard order
     split = txt.split("\r")
     txt = split.join("\r")
+    //console.log(split)
+    //return;
     //
     slide.current = parse_slide_segments([txt])[0]
     //
