@@ -310,9 +310,12 @@ function gun_connect() {
     let overlay = gun.get(config.gun_overlays.service).get(config.gun_overlays.namespace);
     let data = overlay.get('allinone').on(function (data, key) {
         if (data !== gan_allinone_last) {
+            // we fire the vent just if last data chanted
             gan_allinone_last = data
+            // we need to know if the event is ment for show or if it is clear event
             data = JSON.parse(data)
             if (data.shown || (data.shown !== gan_shown_last)) {
+                //if the last event shown is FALSE and is the same as last time wi do not trigger arena
                 gan_shown_last = data.shown
                 gun_overlays_parse_slide(data)
             }
