@@ -100,6 +100,9 @@ function propresenter_reconnect() {
 function propresenter_connect() {
     //refresh config
     config = readConfiguration()
+    if (config.propresenter.enabled !== true) {
+        return;
+    }
     console.log('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/stagedisplay');
     const ws = new WebSocket('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/stagedisplay');
     //
@@ -306,6 +309,11 @@ var gan_shown_last = false;
 function gun_connect() {
     console.log("GUN: Connect")
     config = readConfiguration()
+    //
+    if (config.gun_overlays.enabled !== true) {
+        return;
+    }
+    //
     let gun = Gun([config.gun_overlays.peer]);
     let overlay = gun.get(config.gun_overlays.service).get(config.gun_overlays.namespace);
     let data = overlay.get('allinone').on(function (data, key) {

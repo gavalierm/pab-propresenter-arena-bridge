@@ -5,11 +5,13 @@
     "pass": "not used"
   },
   "propresenter": {
+    "enabled": false,
     "host": "localhost",
     "port": 1024,
     "pass": "stage_default"
   },
   "gun_overlays": {
+    "enabled": false,
     "peer": "https://gun.filiphanes.sk/gun",
     "service": "bible",
     "namespace": "default_namespace"
