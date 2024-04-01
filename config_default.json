@@ -11,7 +11,7 @@
     "pass": "stage_default"
   },
   "gun_overlays": {
-    "enabled": false,
+    "enabled": true,
     "peer": "https://gun.filiphanes.sk/gun",
     "service": "bible",
     "namespace": "default_namespace"

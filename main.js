@@ -19,8 +19,9 @@ console.log('\nExample manipulators:\n');
 console.log('-fw : First word only');
 console.log('-lw : Last word only');
 console.log('-re : Replace ENTER char to SPACE');
-console.log('-td : Trim dot "."');
-console.log('-tc : Trim comma ","');
+console.log('-rd : Trim dot "."');
+console.log('-rc : Trim comma ","');
+console.log('-rv : Trim verse label "<sup>1</sup>" - works only if label is wrapped in <sup> tag');
 console.log('')
 console.log('\nExample block:\n');
 console.log('-1,2..n : "1,2,.." means Slide first or second or nth text block only');
@@ -28,12 +29,13 @@ console.log('')
 console.log('\nExample triggers:\nTriggers for "Zig-Zag" triggering.\n');
 console.log('-a : "a" means trigger only on odd');
 console.log('-b : "b" means trigger only on even');
+console.log('-c : "c" means trigger only if all block are cleared aka nothing to show fallback');
 console.log('')
 console.log('Tags can be combined (order is not relevant):\n')
 console.log('#pab-a-uc-fw')
 console.log('#pab-fw-uc-a')
 console.log('#pab-uc-a-fw')
-console.log('\nAll is the same.\n')
+console.log('\nAll works the same way.\n')
 console.log('===============================\n');
 
 //
@@ -43,13 +45,15 @@ import fs from 'fs';
 import fetch from 'node-fetch'
 import WebSocket from 'ws';
 import Gun from "gun";
+import exp from 'constants';
 //import { setgid } from 'process';
 //import { clear } from 'console';
 //
 let config
 let config_default
 //
-const arena_path_by_id = "/composition/clips/by-id";
+const arena_path_clip_by_id = "/composition/clips/by-id";
+const arena_path_layer_by_id = "/composition/layers/by-id";
 //
 //var config = {}
 //
@@ -61,6 +65,9 @@ var propresenter_check_timeout;
 var arena = []
 //cycle for odd/event
 var cycle = false;
+
+//const sup_array = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹", "⁾ "]
+const sup_array = ["0", "1", "2", "3", "4", "5", "6", "7", "9", "0", ") "]
 
 // read file everytime if needed to change conf without restart the app
 function readConfiguration() {
@@ -101,6 +108,7 @@ function propresenter_connect() {
     //refresh config
     config = readConfiguration()
     if (config.propresenter.enabled !== true) {
+        console.warn("\n------\nProPresenter Module is disabled!\n------\n");
         return;
     }
     console.log('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/stagedisplay');
@@ -311,6 +319,7 @@ function gun_connect() {
     config = readConfiguration()
     //
     if (config.gun_overlays.enabled !== true) {
+        console.warn("\n\n------\n\nGUN Overlays Module is disabled!\n\n------\n\n");
         return;
     }
     //
@@ -356,7 +365,7 @@ async function gun_overlays_parse_slide(data) {
         txt = data.line1 + "\r\n" + data.line2 + "\r\n" + data.line3 + "\r\n" + data.line4;
     }
     
-    console.log("GUN: Slide txt ", txt)
+    //console.log("GUN: Slide txt ", txt)
     //translate data from gun_overlays to pab 
 
     // struct
@@ -377,6 +386,12 @@ async function gun_overlays_parse_slide(data) {
     txt = txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
     //replace non-printable char
     txt = txt.replace(/\u00a0/gm, " ");
+
+    //console.log(txt);
+    txt = txt.replaceAll(/<sup>/g, "@").replaceAll(/<\/sup>/g, "@");
+
+    // replace html tags
+    txt = txt.replace(/(<([^>]+)>)/ig, "");
 
     // reverse order
     //split = txt.split("\r").reverse()
@@ -472,8 +487,10 @@ async function arena_determine_clips() {
     //
     // layers from top to bottom
     // top layers is more important
+    let layer_id = null
     for (var i = data.layers.length - 1; i >= 0; i--) {
         //travers all layers
+        layer_id = data.layers[i].id
         layer = data.layers[i].clips;
         clips = []
         //console.log(clips);
@@ -487,23 +504,27 @@ async function arena_determine_clips() {
             //
             clip = {
                 id: layer[x].id,
+                layer_id: layer_id,
                 name: layer[x].name.value,
                 params: {
                     block: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
-                    rd: (clip_name_pab.match(/.*\-rd.*/g)) ? true : false,
-                    rc: (clip_name_pab.match(/.*\-rc.*/g)) ? true : false,
-                    re: (clip_name_pab.match(/.*\-re.*/g)) ? true : false,
-                    uc: (clip_name_pab.match(/.*\-uc.*/g)) ? true : false,
-                    lc: (clip_name_pab.match(/.*\-lc.*/g)) ? true : false,
-                    cp: (clip_name_pab.match(/.*\-cp.*/g)) ? true : false,
-                    fw: (clip_name_pab.match(/.*\-fw.*/g)) ? true : false,
-                    lw: (clip_name_pab.match(/.*\-lw.*/g)) ? true : false,
-                    a: (clip_name_pab.match(/.*\-a.*/g)) ? true : false,
-                    b: (clip_name_pab.match(/.*\-b.*/g)) ? true : false,
-                    //cs: (clip_name_pab.match(/.*\-cs.*/g)) ? true : false, //cs is default
-                    ns: (clip_name_pab.match(/.*\-ns.*/g)) ? true : false
+                    rd: (clip_name_pab.match(/.*\-rd(?!\w).*/g)) ? true : false, //remove dots
+                    rc: (clip_name_pab.match(/.*\-rc(?!\w).*/g)) ? true : false, //remove commas
+                    re: (clip_name_pab.match(/.*\-re(?!\w).*/g)) ? true : false, //remove new lines
+                    rv: (clip_name_pab.match(/.*\-rv(?!\w).*/g)) ? true : false, //remove verses
+                    uc: (clip_name_pab.match(/.*\-uc(?!\w).*/g)) ? true : false,
+                    lc: (clip_name_pab.match(/.*\-lc(?!\w).*/g)) ? true : false,
+                    cp: (clip_name_pab.match(/.*\-cp(?!\w).*/g)) ? true : false,
+                    fw: (clip_name_pab.match(/.*\-fw(?!\w).*/g)) ? true : false,
+                    lw: (clip_name_pab.match(/.*\-lw(?!\w).*/g)) ? true : false,
+                    a: (clip_name_pab.match(/.*\-a(?!\w).*/g)) ? true : false, //trigger on a cycle
+                    b: (clip_name_pab.match(/.*\-b(?!\w).*/g)) ? true : false, //trigger on b cycle
+                    c: (clip_name_pab.match(/.*\-c(?!\w).*/g)) ? true : false, //trigger on clear
+                    ns: (clip_name_pab.match(/.*\-ns(?!\w).*/g)) ? true : false,
+                    sg: (clip_name_pab.match(/.*\-sg(\d+)/g)) ? parseInt(clip_name_pab.match(/.*\-sg(\d+)/g)[0].match(/.*\-sg(\d+)/)[1], 10) : false, //size guard
                 }
             }
+            
             // now we populate array with objects
             clips.push(clip)
         }
@@ -514,13 +535,24 @@ async function arena_determine_clips() {
     console.log(arena)
 }
 
-async function execute_pab_bridge_triggers(clips) {
+async function execute_pab_bridge_triggers(clips, connect = true) {
 
     for (var i = 0; i < clips.length; i++) {
         //
         //console.log("execute_pab_bridge_triggers", clips[i])
         try {
-            const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + clips[i] + '/connect', { method: 'POST', body: '' });
+            var response = null;
+            if (connect) {
+                response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + clips[i].id + '/connect', { method: 'POST', body: '' });
+            } else {
+                console.log('CLEAR WHOLE LAYER?????');
+                // /composition/layers/by-id/{layer-id}/clear
+                response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_layer_by_id + '/' + clips[i].layer_id + '/clear', { method: 'POST', body: '' });
+            
+            }
+            if (!response) {
+                console.error("Response not defined")
+            }
             //const response = await fetch('https://api.github.com/users/github');
             if (!response.ok) {
                 console.error("Arena: Trigger failed");
@@ -546,7 +578,7 @@ async function arena_update_clip(id, text) {
     }
 
     try {
-        const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_by_id + '/' + id + '', obj);
+        const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + id + '', obj);
         //const response = await fetch('https://api.github.com/users/github');
         if (!response.ok) {
             console.error("Arena: PUT failed");
@@ -563,6 +595,7 @@ async function arena_update_clip(id, text) {
 }
 
 let execute_pab_bridge_triggers_timeout = []
+let arena_scheduled_clips_clear_timeout = null;
 async function execute_pab_bridge(slide) {
     //reverse cycle on each slide
     cycle = !cycle;
@@ -578,9 +611,11 @@ async function execute_pab_bridge(slide) {
     let layer
     let text_for_clip = ''
     let arena_scheduled_clips = []
+    let arena_scheduled_clips_clear = []
     let actual
     let same_layer_triger_protect = false
     let update_count = 0;
+    let clear_count = 0;
     let specific = 0
     //
     for (var i = 0; i < arena.length; i++) {
@@ -594,11 +629,17 @@ async function execute_pab_bridge(slide) {
             //slide
             //console.log('\n\tclip %d', x)
             clip = layer[x]
+            if (clip.params.c) {
+                //clear clips are just for trigger so schedule and skip
+                arena_scheduled_clips_clear.push(clip)
+                continue;
+            }
+            //
             if ((clip.params.a && cycle == true) || (clip.params.b && cycle == false)) {
                 //chedule for trigger
                 if (same_layer_triger_protect == false) {
                     //console.warn("Arena: Trigger scheduled")
-                    arena_scheduled_clips.push(clip.id)
+                    arena_scheduled_clips.push(clip)
                     //enable protection
                     same_layer_triger_protect = true;
                 } else {
@@ -626,6 +667,7 @@ async function execute_pab_bridge(slide) {
                 //just clear the clip
                 console.log("CLEAR clip")
                 update_count++
+                clear_count++
                 await arena_update_clip(clip.id, '')
                 continue;
             }
@@ -645,6 +687,7 @@ async function execute_pab_bridge(slide) {
                     // block is wanted but not present, clear clip
                     console.log("SET Specific segment CLEAR")
                     update_count++
+                    clear_count++
                     await arena_update_clip(clip.id, '')
                     continue;
                 }
@@ -696,9 +739,36 @@ async function execute_pab_bridge(slide) {
                 } 
             }
 
+            if (clip.params.rv) {
+                //remove all numbering
+                text_for_clip = text_for_clip.replaceAll(/\@.*?\@/g, "");
+            } else {
+                // verses
+                let match = text_for_clip.matchAll(/\@(.*?)\@/g);
+
+                for (const m of match) {
+                    //console.log(m)
+                    let n = '';
+                    for (var i = 0; i < m[1].length; i++) {
+                        n = n + sup_array[parseInt(m[1][i], 10)]
+                    }
+                    //let regex = new RegExp('.*\{\{\{\{' + m[1] + '\}\}\}\}.*', 'g');
+                    let regex = new RegExp('\@' + m[1] + '\@', 'g');
+                    //console.log(regex)
+                    text_for_clip = text_for_clip.normalize('NFD').replaceAll(regex, n + sup_array[10]);
+
+                    //console.log(m[1], n, text_for_clip);
+                }
+            }
+
+            if (text_for_clip && clip.params.sg && text_for_clip.length > clip.params.sg) {
+                console.warn("\n\n!!!TEXT FOR CLIP OVERFLOW !!!\n\n")
+            }
+
             if (text_for_clip == undefined) {
                 console.warn("UNDEFINED TEXT", actual)
                 update_count++
+                clear_count++
                 await arena_update_clip(clip.id, '')
                 continue;
             }
@@ -708,6 +778,12 @@ async function execute_pab_bridge(slide) {
             await arena_update_clip(clip.id, text_for_clip)
 
         }
+
+        //because this is the break point for triggers we need to hide clear clips
+        if (arena_scheduled_clips.length > 0) {
+            execute_pab_bridge_triggers(arena_scheduled_clips_clear, false) //false means disconnect
+        }
+
         execute_pab_bridge_triggers_timeout[i] = setTimeout(function (arg_clips, arg_timeout_index) {
             clearTimeout(execute_pab_bridge_triggers_timeout[arg_timeout_index])
             execute_pab_bridge_triggers(arg_clips)
@@ -715,8 +791,19 @@ async function execute_pab_bridge(slide) {
         console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
         arena_scheduled_clips = []
     }
+    if (clear_count == update_count) {
+        console.warn("CONNECT ALL CLEAR CLIPS")
+        //execute_pab_bridge_triggers(arena_scheduled_clips_clear)
 
-    console.log("Arena: Uptates count=%d", update_count)
+        arena_scheduled_clips_clear_timeout = setTimeout(function (arg_clips) {
+            clearTimeout(arena_scheduled_clips_clear);
+            execute_pab_bridge_triggers(arg_clips)
+        }, 15, arena_scheduled_clips_clear)
+    }
+    //free the stack
+    arena_scheduled_clips_clear = []
+
+    console.log("Arena: Uptates count=%d, Clears count=%d", update_count, clear_count)
     //
     //execute_pab_bridge_triggers(arena_scheduled_clips)
     //
@@ -726,3 +813,9 @@ async function execute_pab_bridge(slide) {
 arena_connect()
 propresenter_connect()
 gun_connect()
+
+let run_forever = null
+
+run_forever = setInterval(function () {
+    //console.log("running")
+}, 10000)
