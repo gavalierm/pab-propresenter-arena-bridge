@@ -70,13 +70,14 @@ const sup_array = ["0", "1", "2", "3", "4", "5", "6", "7", "9", "0", ") "]
 
 // read file everytime if needed to change conf without restart the app
 function readConfiguration() {
+    var config_ = null;
     try {
-        config = JSON.parse(fs.readFileSync('./config.json'))
+        config_ = JSON.parse(fs.readFileSync('./config.json'))
     } catch (e) {
         try {
-            config = JSON.parse(fs.readFileSync('./config_default.json'))
+            config_ = JSON.parse(fs.readFileSync('./config_default.json'))
         } catch (e) {
-            console.error("No config file")
+            console.error("No config file", e)
             console.error("No config file")
             console.error("No config file")
             console.error("No config file")
@@ -89,8 +90,8 @@ function readConfiguration() {
             return undefined
         }
     }
-    console.log("CONFIG", config)
-    return config;
+    console.log("CONFIG", config_)
+    return config_;
 }
 
 function propresenter_reconnect() {
