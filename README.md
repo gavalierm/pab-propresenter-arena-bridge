@@ -2,6 +2,8 @@
 
 The purpose is to use ProPresenter as a source of text content and control for Resolume Arena, where Resolume Arena renders the text itself instead of using screen capture, Spout, NDI or similar.
 
+### Now supporting Overlays by @filiphanes
+https://github.com/filiphanes/gun-overlays/tree/public
 
 ## How it works
 
