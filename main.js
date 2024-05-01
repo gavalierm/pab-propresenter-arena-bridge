@@ -8,7 +8,7 @@ console.log('\nUsage:\n');
 console.log('Enable HTTP Api in Resolume Arena');
 console.log('Enable Remote Conrol "Stage" in ProPresenter');
 console.log('Setup config.json file according to the credentials in Arena and Propresenter');
-console.log('Add "#pab" to the clip name in Resolume Arena which cointains "Text Block" source');
+console.log('Add "#pab" to the clip name in Resolume Arena which cointains "Text box" source');
 console.log('')
 console.log('\nExample modificators:\n');
 console.log('-uc : UPPERCASE');
@@ -23,13 +23,13 @@ console.log('-rd : Trim dot "."');
 console.log('-rc : Trim comma ","');
 console.log('-rv : Trim verse label "<sup>1</sup>" - works only if label is wrapped in <sup> tag');
 console.log('')
-console.log('\nExample block:\n');
-console.log('-1,2..n : "1,2,.." means Slide first or second or nth text block only');
+console.log('\nExample box:\n');
+console.log('-1,2..n : "1,2,.." means Slide first or second or nth text box only');
 console.log('')
 console.log('\nExample triggers:\nTriggers for "Zig-Zag" triggering.\n');
 console.log('-a : "a" means trigger only on odd');
 console.log('-b : "b" means trigger only on even');
-console.log('-c : "c" means trigger only if all block are cleared aka nothing to show fallback');
+console.log('-c : "c" means trigger only if all box are cleared aka nothing to show fallback');
 console.log('')
 console.log('Tags can be combined (order is not relevant):\n')
 console.log('#pab-a-uc-fw')
@@ -49,8 +49,7 @@ import exp from 'constants';
 //import { setgid } from 'process';
 //import { clear } from 'console';
 //
-let config
-let config_default
+let config = readConfiguration()
 //
 const arena_path_clip_by_id = "/composition/clips/by-id";
 const arena_path_layer_by_id = "/composition/layers/by-id";
@@ -71,30 +70,27 @@ const sup_array = ["0", "1", "2", "3", "4", "5", "6", "7", "9", "0", ") "]
 
 // read file everytime if needed to change conf without restart the app
 function readConfiguration() {
-    if (!config_default) {
+    try {
+        config = JSON.parse(fs.readFileSync('./config.json'))
+    } catch (e) {
         try {
-            config_default = JSON.parse(fs.readFileSync('./config_default.json'))
-            config = config_default
-            //console.log("CONFIG DEFAULT", config)
+            config = JSON.parse(fs.readFileSync('./config_default.json'))
         } catch (e) {
-            console.log("No config default")
+            console.error("No config file")
+            console.error("No config file")
+            console.error("No config file")
+            console.error("No config file")
+            console.error("No config file")
+            console.error("No config file")
+            console.error("No config file")
+            console.error("No config file")
+            //die
+            process.exit()
             return undefined
         }
     }
-
-    try {
-        config = JSON.parse(fs.readFileSync('./config.json'))
-        console.log("CONFIG", config)
-        return config
-    } catch (e) {
-        if (config_default) {
-            config = config_default
-            //console.log("CONFIG FROM DEFAULT", config)
-            return config
-        }
-        console.log("No config")
-        return undefined
-    }
+    console.log("CONFIG", config)
+    return config;
 }
 
 function propresenter_reconnect() {
@@ -106,7 +102,6 @@ function propresenter_reconnect() {
 
 function propresenter_connect() {
     //refresh config
-    config = readConfiguration()
     if (config.propresenter.enabled !== true) {
         console.warn("\n------\nProPresenter Module is disabled!\n------\n");
         return;
@@ -142,17 +137,63 @@ function propresenter_connect() {
             }
             return;
         }
-        if (!data.includes('"acn":"fv"')) {
-            return;
-        }
         //console.log(data);
         //var data = JSON.parse(message.utf8Data);
         if (arena_state != 'connected') {
             console.error("ProPresenter: Arena NOT connected")
             return;
         }
-        return propresenter_parse_slide(JSON.parse(data))
+
+
+        if (data.includes('"acn":"cc"') && config.propresenter.presentation_request) {
+            //i do not know what data is uid from cc event so who cares and give me whole active presentation
+            return propresenter_presentation_request();
+        }
+
+        if (data.includes('"acn":"fv"')) {
+            return propresenter_parse_slide(JSON.parse(data))
+        }
+
+        return;
+        
     });
+}
+
+async function propresenter_presentation_request(uuid = 'active', attempt = 0) {
+
+    if (!config.propresenter.presentation_request) {
+        console.info("ProPresenter: presentation_request not enabled");
+        return;
+    }
+
+    try {
+        const response = await fetch('http://' + config.propresenter.host + ':' + config.propresenter.port + '/v1/presentation/' + uuid + '?chunked=false');
+        //const response = await fetch('https://api.github.com/users/github');
+        if (!response.ok) {
+            console.log("ProPresenter: presentation_request not OK");
+            if (attempt < 2) {
+                return propresenter_presentation_request(uuid, attempt++);
+            }
+            return;
+        }
+        //console.log("ProPresenter: presentation_request OK");
+        return propresenter_parse_presentation_data();
+    } catch (error) {
+        console.log("ProPresenter: get_presentation error", error);
+        return;
+    }
+}
+
+async function propresenter_parse_presentation_data(data) {
+    console.log("ProPresenter: propresenter_parse_presentation_data", data)
+    //
+    if (data.presentation === undefined) {
+        console.log("ProPresenter: undefined data");
+        return;
+    }
+
+    return execute_pab_presentation(data)
+
 }
 
 function parse_first_word(words) {
@@ -230,7 +271,7 @@ function parse_slide_segments(segments) {
     return segments_;
 }
 
-function propresenter_parse_slide(data) {
+async function propresenter_parse_slide(data) {
     //console.log("ProPresenter: Slide", data)
     //
     if (data.ary === undefined) {
@@ -306,7 +347,7 @@ function propresenter_parse_slide(data) {
     }
 
     //console.log(slide.current)
-    return execute_pab_bridge(slide)
+    return execute_pab_slide(slide)
 }
 
 
@@ -316,7 +357,6 @@ var gan_allinone_last = '{}';
 var gan_shown_last = false;
 function gun_connect() {
     console.log("GUN: Connect")
-    config = readConfiguration()
     //
     if (config.gun_overlays.enabled !== true) {
         console.warn("\n\n------\n\nGUN Overlays Module is disabled!\n\n------\n\n");
@@ -407,7 +447,7 @@ async function gun_overlays_parse_slide(data) {
         slide.current.segments = parse_slide_segments(split)
     }
     //console.log(slide.current);
-    return execute_pab_bridge(slide)
+    return execute_pab_slide(slide)
 }
 
 
@@ -421,7 +461,6 @@ function arena_reconnect() {
 }
 
 async function arena_connect() {
-    config = readConfiguration()
     clearTimeout(arena_check_timeout)
 
     try {
@@ -447,7 +486,6 @@ async function arena_determine_clips() {
     if (arena_state != 'connected') {
         return arena_connect()
     }
-    config = readConfiguration()
     // arena is connected
 
     let data;
@@ -507,7 +545,7 @@ async function arena_determine_clips() {
                 layer_id: layer_id,
                 name: layer[x].name.value,
                 params: {
-                    block: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
+                    box: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
                     rd: (clip_name_pab.match(/.*\-rd(?!\w).*/g)) ? true : false, //remove dots
                     rc: (clip_name_pab.match(/.*\-rc(?!\w).*/g)) ? true : false, //remove commas
                     re: (clip_name_pab.match(/.*\-re(?!\w).*/g)) ? true : false, //remove new lines
@@ -515,8 +553,11 @@ async function arena_determine_clips() {
                     uc: (clip_name_pab.match(/.*\-uc(?!\w).*/g)) ? true : false,
                     lc: (clip_name_pab.match(/.*\-lc(?!\w).*/g)) ? true : false,
                     cp: (clip_name_pab.match(/.*\-cp(?!\w).*/g)) ? true : false,
+                    //
+                    pn: (clip_name_pab.match(/.*\-pn(?!\w).*/g)) ? true : false, //presentation name
                     fw: (clip_name_pab.match(/.*\-fw(?!\w).*/g)) ? true : false,
                     lw: (clip_name_pab.match(/.*\-lw(?!\w).*/g)) ? true : false,
+                    //
                     a: (clip_name_pab.match(/.*\-a(?!\w).*/g)) ? true : false, //trigger on a cycle
                     b: (clip_name_pab.match(/.*\-b(?!\w).*/g)) ? true : false, //trigger on b cycle
                     c: (clip_name_pab.match(/.*\-c(?!\w).*/g)) ? true : false, //trigger on clear
@@ -535,11 +576,30 @@ async function arena_determine_clips() {
     console.log(arena)
 }
 
-async function execute_pab_bridge_triggers(clips, connect = true) {
+async function arena_push_presentation_data(data) {
+    try {
+        const response = await fetch('http://' + config.propresenter.host + ':' + config.propresenter.port + '/v1/presentation/' + uuid + '?chunked=false');
+        //const response = await fetch('https://api.github.com/users/github');
+        if (!response.ok) {
+            console.log("ProPresenter: presentation_request not OK");
+            if (attempt < 2) {
+                return propresenter_presentation_request(uuid, attempt++);
+            }
+            return;
+        }
+        //console.log("ProPresenter: presentation_request OK");
+        return arena_push_presentation_data();
+    } catch (error) {
+        console.log("ProPresenter: get_presentation error", error);
+        return;
+    }
+}
+
+async function execute_pab_slide_triggers(clips, connect = true) {
 
     for (var i = 0; i < clips.length; i++) {
         //
-        //console.log("execute_pab_bridge_triggers", clips[i])
+        //console.log("execute_pab_slide_triggers", clips[i])
         try {
             var response = null;
             if (connect) {
@@ -594,16 +654,68 @@ async function arena_update_clip(id, text) {
     }
 }
 
-let execute_pab_bridge_triggers_timeout = []
+async function execute_pab_presentation(presentation) {
+    if (arena.length == 0) {
+        console.log("execute_pab_slide", "No clips")
+        return;
+    }
+
+    let clip
+    let layer
+    let text_for_clip = ''
+    let same_layer_triger_protect = false
+
+    let actual = presentation; //hack
+
+    //
+    for (var i = 0; i < arena.length; i++) {
+        //console.log('LAYER %d\n', i)
+        //layers
+        layer = arena[i]
+        // disable protection for triggering on same page
+        same_layer_triger_protect = false
+        //
+        for (var x = 0; x < layer.length; x++) {
+            //slide
+            //console.log('\n\tclip %d', x)
+            clip = layer[x]
+
+            //skipp all slide related clips
+            if (!clip.params.pn) {
+                continue;
+            }
+
+            //default text
+            text_for_clip = actual.id.name
+            //
+
+            if (text_for_clip.txt == undefined || text_for_clip.txt == '') {
+                //just clear the clip
+                console.log("CLEAR clip")
+                await arena_update_clip(clip.id, '')
+                continue;
+            }
+
+            //perform manupulators
+            text_for_clip = perform_manipulation(text_for_clip, clip);
+
+            await arena_update_clip(clip.id, text_for_clip)
+
+        }
+    }
+}
+
+
+let execute_pab_slide_triggers_timeout = []
 let arena_scheduled_clips_clear_timeout = null;
-async function execute_pab_bridge(slide) {
+async function execute_pab_slide(slide) {
     //reverse cycle on each slide
     cycle = !cycle;
     //
-    //console.log('execute_pab_bridge', slide);
+    //console.log('execute_pab_slide', slide);
     //now we need populate all clips according to their params
     if (arena.length == 0) {
-        console.log("execute_pab_bridge", "No clips")
+        console.log("execute_pab_slide", "No clips")
         return;
     }
     //
@@ -673,9 +785,9 @@ async function execute_pab_bridge(slide) {
             }
 
             // check if the clip wants specific segment
-            if (clip.params.block) {
-                //console.log("WANTED Specific segment", clip.params.block, actual.segments)
-                specific = parseInt(clip.params.block, 10) - 1
+            if (clip.params.box) {
+                //console.log("WANTED Specific segment", clip.params.box, actual.segments)
+                specific = parseInt(clip.params.box, 10) - 1
 
                 if ((actual.segments == undefined && specific == 0) || (actual.segments && actual.segments.length == 0 && specific == 0)) {
                     console.log("SET Specific segment DEFAULT")
@@ -684,7 +796,7 @@ async function execute_pab_bridge(slide) {
                     console.log("SET Specific segment SPECIFIC")
                     actual = actual.segments[specific]
                 } else {
-                    // block is wanted but not present, clear clip
+                    // box is wanted but not present, clear clip
                     console.log("SET Specific segment CLEAR")
                     update_count++
                     clear_count++
@@ -706,60 +818,13 @@ async function execute_pab_bridge(slide) {
             } else if (clip.params.lw) {
                 //last word only
                 text_for_clip = actual.lw
+            } else if (clip.params.pn) {
+                //last word only
+                text_for_clip = actual.pn
             }
 
-            if (clip.params.uc) {
-                //uppercase
-                text_for_clip = text_for_clip.toUpperCase()
-            } else if (clip.params.lc) {
-                //lowercase
-                text_for_clip = text_for_clip.toLowerCase()
-            } else if (clip.params.cp) {
-                //caps
-                text_for_clip = text_for_clip.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
-            }
-
-            if (clip.params.re) {
-                //replace enter with space
-                text_for_clip = text_for_clip.replace(/[\r\n]/g, " ")
-            } 
-
-            if (clip.params.rd && clip.params.rc) {
-                //trim dot and comma
-                text_for_clip = text_for_clip.replace(/(^(\.|\,)+)|((\.|\,)+$)/g, "")
-            } else {
-                if (clip.params.rd) {
-                    //trim just dot
-                    text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
-                } 
-
-                if (clip.params.rc) {
-                    //trim just comma
-                    text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
-                } 
-            }
-
-            if (clip.params.rv) {
-                //remove all numbering
-                text_for_clip = text_for_clip.replaceAll(/\@.*?\@/g, "");
-            } else {
-                // verses
-                let match = text_for_clip.matchAll(/\@(.*?)\@/g);
-
-                for (const m of match) {
-                    //console.log(m)
-                    let n = '';
-                    for (var i = 0; i < m[1].length; i++) {
-                        n = n + sup_array[parseInt(m[1][i], 10)]
-                    }
-                    //let regex = new RegExp('.*\{\{\{\{' + m[1] + '\}\}\}\}.*', 'g');
-                    let regex = new RegExp('\@' + m[1] + '\@', 'g');
-                    //console.log(regex)
-                    text_for_clip = text_for_clip.normalize('NFD').replaceAll(regex, n + sup_array[10]);
-
-                    //console.log(m[1], n, text_for_clip);
-                }
-            }
+            //perform manupulators
+            text_for_clip = perform_manipulation(text_for_clip, clip);
 
             if (text_for_clip && clip.params.sg && text_for_clip.length > clip.params.sg) {
                 console.warn("\n\n!!!TEXT FOR CLIP OVERFLOW !!!\n\n")
@@ -781,23 +846,23 @@ async function execute_pab_bridge(slide) {
 
         //because this is the break point for triggers we need to hide clear clips
         if (arena_scheduled_clips.length > 0) {
-            execute_pab_bridge_triggers(arena_scheduled_clips_clear, false) //false means disconnect
+            execute_pab_slide_triggers(arena_scheduled_clips_clear, false) //false means disconnect
         }
 
-        execute_pab_bridge_triggers_timeout[i] = setTimeout(function (arg_clips, arg_timeout_index) {
-            clearTimeout(execute_pab_bridge_triggers_timeout[arg_timeout_index])
-            execute_pab_bridge_triggers(arg_clips)
+        execute_pab_slide_triggers_timeout[i] = setTimeout(function (arg_clips, arg_timeout_index) {
+            clearTimeout(execute_pab_slide_triggers_timeout[arg_timeout_index])
+            execute_pab_slide_triggers(arg_clips)
         }, 5, arena_scheduled_clips, i)
         console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
         arena_scheduled_clips = []
     }
     if (clear_count == update_count) {
         console.warn("CONNECT ALL CLEAR CLIPS")
-        //execute_pab_bridge_triggers(arena_scheduled_clips_clear)
+        //execute_pab_slide_triggers(arena_scheduled_clips_clear)
 
         arena_scheduled_clips_clear_timeout = setTimeout(function (arg_clips) {
             clearTimeout(arena_scheduled_clips_clear);
-            execute_pab_bridge_triggers(arg_clips)
+            execute_pab_slide_triggers(arg_clips)
         }, 15, arena_scheduled_clips_clear)
     }
     //free the stack
@@ -805,9 +870,68 @@ async function execute_pab_bridge(slide) {
 
     console.log("Arena: Uptates count=%d, Clears count=%d", update_count, clear_count)
     //
-    //execute_pab_bridge_triggers(arena_scheduled_clips)
+    //execute_pab_slide_triggers(arena_scheduled_clips)
     //
     console.log("\n\n")
+}
+
+//nesmie byt async
+function perform_manipulation(text_for_clip, clip) {
+
+    if (clip.params.uc) {
+        //uppercase
+        text_for_clip = text_for_clip.toUpperCase()
+    } else if (clip.params.lc) {
+        //lowercase
+        text_for_clip = text_for_clip.toLowerCase()
+    } else if (clip.params.cp) {
+        //caps
+        text_for_clip = text_for_clip.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+    }
+
+    if (clip.params.re) {
+        //replace enter with space
+        text_for_clip = text_for_clip.replace(/[\r\n]/g, " ")
+    } 
+
+    if (clip.params.rd && clip.params.rc) {
+        //trim dot and comma
+        text_for_clip = text_for_clip.replace(/(^(\.|\,)+)|((\.|\,)+$)/g, "")
+    } else {
+        if (clip.params.rd) {
+            //trim just dot
+            text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
+        } 
+
+        if (clip.params.rc) {
+            //trim just comma
+            text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
+        } 
+    }
+
+    if (clip.params.rv) {
+        //remove all numbering
+        text_for_clip = text_for_clip.replaceAll(/\@.*?\@/g, "");
+    } else {
+        // verses
+        let match = text_for_clip.matchAll(/\@(.*?)\@/g);
+
+        for (const m of match) {
+            //console.log(m)
+            let n = '';
+            for (var i = 0; i < m[1].length; i++) {
+                n = n + sup_array[parseInt(m[1][i], 10)]
+            }
+            //let regex = new RegExp('.*\{\{\{\{' + m[1] + '\}\}\}\}.*', 'g');
+            let regex = new RegExp('\@' + m[1] + '\@', 'g');
+            //console.log(regex)
+            text_for_clip = text_for_clip.normalize('NFD').replaceAll(regex, n + sup_array[10]);
+
+            //console.log(m[1], n, text_for_clip);
+        }
+    }
+
+    return text_for_clip
 }
 
 arena_connect()
