@@ -140,11 +140,6 @@ function propresenter_connect() {
         }
         //console.log(data);
         //var data = JSON.parse(message.utf8Data);
-        if (arena_state != 'connected') {
-            console.error("ProPresenter: Arena NOT connected")
-            return;
-        }
-
 
         if (data.includes('"acn":"cc"') && config.propresenter.presentation_request) {
             //i do not know what data is uid from cc event so who cares and give me whole active presentation
@@ -177,23 +172,28 @@ async function propresenter_presentation_request(uuid = 'active', attempt = 0) {
             }
             return;
         }
+        let data = await response.json();
+        if (!data || data == undefined) {
+            console.log("ProPresenter: presentation_request undefined response");
+            return;
+        }
         //console.log("ProPresenter: presentation_request OK");
-        return propresenter_parse_presentation_data();
+        return propresenter_parse_presentation_data(data);
     } catch (error) {
-        console.log("ProPresenter: get_presentation error", error);
+        console.log("ProPresenter: presentation_request error", error);
         return;
     }
 }
 
 async function propresenter_parse_presentation_data(data) {
-    console.log("ProPresenter: propresenter_parse_presentation_data", data)
+    //console.log("ProPresenter: propresenter_parse_presentation_data", data)
     //
-    if (data.presentation === undefined) {
+    if (data === undefined || data.presentation === undefined) {
         console.log("ProPresenter: undefined data");
         return;
     }
 
-    return execute_pab_presentation(data)
+    return execute_pab_presentation(data.presentation)
 
 }
 
@@ -457,7 +457,7 @@ function arena_reconnect() {
     clearTimeout(arena_check_timeout)
     arena_state = 'disconnected';
     arena_check_timeout = setTimeout(function () {
-        return arena_determine_clips();
+        return arena_connect();
     }, 10000)
 }
 
@@ -475,7 +475,7 @@ async function arena_connect() {
         arena_state = 'connected';
         return arena_determine_clips();
     } catch (error) {
-        console.log("Arena: Connection error", error);
+        //console.log("Arena: Connection error", error);
         return arena_reconnect();
     }
 }
@@ -598,6 +598,11 @@ async function arena_push_presentation_data(data) {
 
 async function execute_pab_slide_triggers(clips, connect = true) {
 
+    if (arena_state != 'connected') {
+        console.error("Execute: Arena NOT connected")
+        return;
+    }
+
     for (var i = 0; i < clips.length; i++) {
         //
         //console.log("execute_pab_slide_triggers", clips[i])
@@ -656,6 +661,12 @@ async function arena_update_clip(id, text) {
 }
 
 async function execute_pab_presentation(presentation) {
+
+    if (arena_state != 'connected') {
+        console.error("Execute: Arena NOT connected")
+        return;
+    }
+
     if (arena.length == 0) {
         console.log("execute_pab_slide", "No clips")
         return;
@@ -690,7 +701,7 @@ async function execute_pab_presentation(presentation) {
             text_for_clip = actual.id.name
             //
 
-            if (text_for_clip.txt == undefined || text_for_clip.txt == '') {
+            if (text_for_clip == undefined || text_for_clip == '') {
                 //just clear the clip
                 console.log("CLEAR clip")
                 await arena_update_clip(clip.id, '')
@@ -710,6 +721,12 @@ async function execute_pab_presentation(presentation) {
 let execute_pab_slide_triggers_timeout = []
 let arena_scheduled_clips_clear_timeout = null;
 async function execute_pab_slide(slide) {
+
+    if (arena_state != 'connected') {
+        console.error("Execute: Arena NOT connected")
+        return;
+    }
+
     //reverse cycle on each slide
     cycle = !cycle;
     //
