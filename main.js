@@ -708,6 +708,11 @@ async function execute_pab_presentation(presentation) {
                 continue;
             }
 
+            if (clip.params.pnc) {
+                //         \d+[ |_]+
+                text_for_clip = text_for_clip.replace(/\d+[ |_]+/g, "");
+            }
+
             //perform manupulators
             text_for_clip = perform_manipulation(text_for_clip, clip);
 
