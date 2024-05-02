@@ -142,6 +142,7 @@ function propresenter_connect() {
         //var data = JSON.parse(message.utf8Data);
 
         if (data.includes('"acn":"cc"') && config.propresenter.presentation_request) {
+            console.log("\n\n\n\n\n\n\n\n\n\n\n", "CC event received", "\n\n\n\n\n\n\n\n\n\n\n")
             //i do not know what data is uid from cc event so who cares and give me whole active presentation
             return propresenter_presentation_request();
         }
@@ -556,6 +557,7 @@ async function arena_determine_clips() {
                     cp: (clip_name_pab.match(/.*\-cp(?!\w).*/g)) ? true : false,
                     //
                     pn: (clip_name_pab.match(/.*\-pn(?!\w).*/g)) ? true : false, //presentation name
+                    pnc: (clip_name_pab.match(/.*\-pnc(?!\w).*/g)) ? true : false, //presentation name
                     fw: (clip_name_pab.match(/.*\-fw(?!\w).*/g)) ? true : false,
                     lw: (clip_name_pab.match(/.*\-lw(?!\w).*/g)) ? true : false,
                     //
@@ -693,10 +695,11 @@ async function execute_pab_presentation(presentation) {
             clip = layer[x]
 
             //skipp all slide related clips
-            if (!clip.params.pn) {
+            if (!clip.params.pn && !clip.params.pnc) {
                 continue;
             }
 
+            //console.log(clip)
             //default text
             text_for_clip = actual.id.name
             //
@@ -765,7 +768,7 @@ async function execute_pab_slide(slide) {
             //console.log('\n\tclip %d', x)
             clip = layer[x]
 
-            if (clip.params.pn) {
+            if (clip.params.pn || clip.params.pnc) {
                 //cc clip is not mented for slide content
                 continue;
             }
