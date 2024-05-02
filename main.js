@@ -896,6 +896,10 @@ async function execute_pab_slide(slide) {
 //nesmie byt async
 function perform_manipulation(text_for_clip, clip) {
 
+    if (text_for_clip == undefined || text_for_clip == '') {
+        return text_for_clip
+    }
+    
     if (clip.params.uc) {
         //uppercase
         text_for_clip = text_for_clip.toUpperCase()
