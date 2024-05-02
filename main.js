@@ -711,11 +711,6 @@ async function execute_pab_presentation(presentation) {
                 continue;
             }
 
-            if (clip.params.pnc) {
-                //         \d+[ |_]+
-                text_for_clip = text_for_clip.replace(/\d+[ |_]+/g, "");
-            }
-
             //perform manupulators
             text_for_clip = perform_manipulation(text_for_clip, clip);
 
@@ -911,6 +906,14 @@ function perform_manipulation(text_for_clip, clip) {
         return text_for_clip
     }
 
+    //
+    text_for_clip = text_for_clip.normalize('NFC')
+    //
+
+    if (clip.params.pnc) {
+        text_for_clip = text_for_clip.replace(/\d+[ |_]+/g, "");
+    }
+
     if (clip.params.uc) {
         //uppercase
         text_for_clip = text_for_clip.toUpperCase()
@@ -958,7 +961,7 @@ function perform_manipulation(text_for_clip, clip) {
             //let regex = new RegExp('.*\{\{\{\{' + m[1] + '\}\}\}\}.*', 'g');
             let regex = new RegExp('\@' + m[1] + '\@', 'g');
             //console.log(regex)
-            text_for_clip = text_for_clip.normalize('NFD').replaceAll(regex, n + sup_array[10]);
+            text_for_clip = text_for_clip.replaceAll(regex, n + sup_array[10]);
 
             //console.log(m[1], n, text_for_clip);
         }
