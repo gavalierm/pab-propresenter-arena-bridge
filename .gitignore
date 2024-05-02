@@ -6,3 +6,4 @@ PAB.command
 **/.DS_Store
 **/._.DS_Store
 radata
+node_modules/gun/stats.radata
