@@ -759,6 +759,12 @@ async function execute_pab_slide(slide) {
             //slide
             //console.log('\n\tclip %d', x)
             clip = layer[x]
+
+            if (clip.params.pn) {
+                //cc clip is not mented for slide content
+                continue;
+            }
+
             if (clip.params.c) {
                 //clear clips are just for trigger so schedule and skip
                 arena_scheduled_clips_clear.push(clip)
@@ -836,9 +842,6 @@ async function execute_pab_slide(slide) {
             } else if (clip.params.lw) {
                 //last word only
                 text_for_clip = actual.lw
-            } else if (clip.params.pn) {
-                //last word only
-                text_for_clip = actual.pn
             }
 
             //perform manupulators
@@ -899,7 +902,7 @@ function perform_manipulation(text_for_clip, clip) {
     if (text_for_clip == undefined || text_for_clip == '') {
         return text_for_clip
     }
-    
+
     if (clip.params.uc) {
         //uppercase
         text_for_clip = text_for_clip.toUpperCase()
