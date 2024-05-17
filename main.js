@@ -911,7 +911,7 @@ function perform_manipulation(text_for_clip, clip) {
     //
 
     if (clip.params.pnc) {
-        text_for_clip = text_for_clip.replace(/\d+[ |_]+/g, "");
+        text_for_clip = text_for_clip.replace(/^([\d]+)/g, "");
     }
 
     if (clip.params.uc) {
