@@ -649,7 +649,7 @@ async function arena_update_clip(id, text) {
         const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + id + '', obj);
         //const response = await fetch('https://api.github.com/users/github');
         if (!response.ok) {
-            console.error("Arena: PUT failed");
+            console.error("Arena: PUT failed", id, obj);
             return;
             //return arena_reconnect();
         }
