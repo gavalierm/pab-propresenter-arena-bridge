@@ -148,6 +148,7 @@ function propresenter_connect() {
         }
 
         if (data.includes('"acn":"fv"')) {
+            //console.log({slide: data});
             return propresenter_parse_slide(JSON.parse(data))
         }
 
@@ -253,7 +254,7 @@ function parse_slide_segments(segments) {
     //
     for (var i = 0; i < segments.length; i++) {
         // trim new lines
-        segments[i] = segments[i].replace(/(^\n+)|(\n+$)/g, "")
+        segments[i] = segments[i].replace(/\{break\}/g, "").trim().replace(/(^\n+)|(\n+$)/g, "")
         // first word ana last word is little tricky because wo cant read the words and we dont know the context
         // we use the litle trick to "join" common words with pre-words
         //
@@ -307,10 +308,10 @@ async function propresenter_parse_slide(data) {
             case 'cs':
                 if (data.ary[i].txt !== '') {
                     // optimalisation
-                    txt = data.ary[i].txt.trim().replace(/^\x82+|\x82+$/gm, "").replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+                    txt = data.ary[i].txt.replace(/^\x82+|\x82+$/gm, "")
+                    txt = txt.replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
                     //replace non-printable char
                     txt = txt.replace(/\u00a0/gm, " ");
-
                     // reverse order
                     //split = txt.split("\r").reverse()
                     // stadnard order
@@ -347,8 +348,6 @@ async function propresenter_parse_slide(data) {
                 break;
         }
     }
-
-    //console.log(slide.current)
     return execute_pab_slide(slide)
 }
 
@@ -573,10 +572,10 @@ async function arena_determine_clips() {
             clips.push(clip)
         }
         if (clips.length > 0) {
+            console.log(clips)
             arena.push(clips)
         }     
     }
-    console.log(arena)
 }
 
 async function arena_push_presentation_data(data) {
@@ -816,10 +815,12 @@ async function execute_pab_slide(slide) {
                 //console.log("WANTED Specific segment", clip.params.box, actual.segments)
                 specific = parseInt(clip.params.box, 10) - 1
 
-                if ((actual.segments == undefined && specific == 0) || (actual.segments && actual.segments.length == 0 && specific == 0)) {
-                    console.log("SET Specific segment DEFAULT")
-                    actual = actual
-                } else if (actual.segments && actual.segments[specific]) {
+                // specificky clip nikdy nedostane nespecificky slide/box
+                //if ((actual.segments == undefined && specific == 0) || (actual.segments && actual.segments.length == 0 && specific == 0)) {
+                //    console.log("SET Specific segment DEFAULT")
+                //   actual = actual
+                //} else 
+                if (actual.segments && actual.segments[specific]) {
                     console.log("SET Specific segment SPECIFIC")
                     actual = actual.segments[specific]
                 } else {
