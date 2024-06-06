@@ -254,7 +254,7 @@ function parse_slide_segments(segments) {
     //
     for (var i = 0; i < segments.length; i++) {
         // trim new lines
-        segments[i] = segments[i].replace(/\{break\}/g, "").trim().replace(/(^\n+)|(\n+$)/g, "")
+        segments[i] = segments[i].replace(/\{break\}/g, "").replace(/(^\n+)|(\n+$)/g, "").trim()
         // first word ana last word is little tricky because wo cant read the words and we dont know the context
         // we use the litle trick to "join" common words with pre-words
         //
@@ -909,11 +909,11 @@ function perform_manipulation(text_for_clip, clip) {
     }
 
     //
-    text_for_clip = text_for_clip.normalize('NFC')
+    text_for_clip = text_for_clip.normalize('NFC').trim()
     //
 
     if (clip.params.pnc) {
-        text_for_clip = text_for_clip.replace(/^([\d]+)/g, "");
+        text_for_clip = text_for_clip.replace(/^([\d]+)/g, "").trim();
     }
 
     if (clip.params.uc) {
