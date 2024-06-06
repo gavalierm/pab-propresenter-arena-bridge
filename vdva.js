@@ -491,11 +491,11 @@ async function propresenter_connect() {
 			data = JSON.parse(data);
 			//console.log(data);
 			if (!data || !data.authenticated) {
-				console.error("\n\n\nPropresenter: [" + propresenter_state + "] Auth failed\n\n\n")
+				console.error("\n\n\nProPresenter: [" + propresenter_state + "] Auth failed\n\n\n")
 				return propresenter_reconnect();
 			}
-			propresenter_state == 'connected'
-			console.log("\n\n\nPropresenter: [" + propresenter_state + "] Auth OK\n\n\n")
+			propresenter_state = 'connected'
+			console.log("\n\n\nProPresenter: [" + propresenter_state + "] Auth OK\n\n\n")
 			return;
 		}
 
