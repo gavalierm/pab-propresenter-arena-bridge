@@ -1,6 +1,7 @@
 import fs from 'fs';
 import fetch from 'node-fetch'
 import WebSocket from 'ws';
+import Gun from "gun";
 
 //
 let config = readConfiguration()
@@ -20,6 +21,95 @@ var arena = []
 // run app
 propresenter_connect()
 arena_connect()
+gun_connect()
+
+// gun connection
+// https://github.com/filiphanes/gun-overlays/tree/public
+var gan_allinone_last = '{}';
+var gan_shown_last = false;
+function gun_connect() {
+	console.log("GUN: Connect")
+	//
+	if (config.gun_overlays.enabled !== true) {
+		console.warn("\n\n------\n\nGUN: Overlays Module is disabled!\n\n------\n\n");
+		return;
+	}
+	//
+	let gun = Gun([config.gun_overlays.peer]);
+	let overlay = gun.get(config.gun_overlays.service).get(config.gun_overlays.namespace);
+	let data = overlay.get('allinone').on(function (data, key) {
+		if (data !== gan_allinone_last) {
+			// we fire the vent just if last data chanted
+			gan_allinone_last = data
+			// we need to know if the event is ment for show or if it is clear event
+			data = JSON.parse(data)
+			if (data.shown || (data.shown !== gan_shown_last)) {
+				//if the last event shown is FALSE and is the same as last time wi do not trigger arena
+				gan_shown_last = data.shown
+				gun_overlays_parse_slide(data)
+			}
+           
+		}
+		//console.log("Last\n", allinone_last)
+		//console.log("\n\n", key, "\n");
+		//console.log(JSON.parse(data));
+	});
+}
+
+async function gun_overlays_parse_slide(data) {
+
+	//console.log("GUN: Slide data ", data)
+	//
+	if (data === undefined) {
+		console.log("GUN: undefined data");
+		return;
+	}
+	//
+	//console.log("GUUUUUUUUUUUN\n", data)
+
+	let text = ''
+    
+	//hack for now
+	if (data.shown) {
+		text = data.line1 + "\r\n" + data.line2 + "\r\n" + data.line3 + "\r\n" + data.line4;
+	}
+    
+	//console.log("GUN: Slide txt ", txt)
+	//translate data from gun_overlays to pab 
+
+	// struct
+	let slide = {
+		presentation_title: '',
+		txt: '',
+		segments: [
+		]
+	}
+
+	// optimalisation
+	text = text.replace(/^\x82+|\x82+$/gm, "").replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+	//replace non-printable char
+	text = text.replace(/\u00a0/gm, " ");
+
+	//console.log(txt);
+	text = text.replaceAll(/<sup>/g, "@").replaceAll(/<\/sup>/g, "@");
+
+	// replace html tags
+	text = text.replace(/(<([^>]+)>)/ig, "");
+
+	let split = text.split("\r")
+	//
+	text = parse_slide_segments([split.join("\r")])[0]
+	//
+	slide.txt = text.txt
+	slide.fw = text.fw
+	slide.lw = text.lw
+	//
+	if (split.length > 1) {
+		slide.segments = parse_slide_segments(split)
+	}
+	//console.log(slide.current);
+	return execute_pab_slide(slide)
+}
 
 async function arena_update_clip(id, text) {
 	//console.log("arena_update_clip", id)
@@ -566,11 +656,11 @@ function perform_manipulation(text_for_clip, clip) {
 	}
 
 	//
-	text_for_clip = text_for_clip.normalize('NFC')
+	text_for_clip = text_for_clip.normalize('NFC').trim()
 	//
 
 	if (clip.params.pnc) {
-		text_for_clip = text_for_clip.replace(/^([\d]+)/g, "").trim();
+		text_for_clip = text_for_clip.replace(/^([\d]+)/g, "");
 	}
 
 	if (clip.params.uc) {
