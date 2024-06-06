@@ -5,6 +5,7 @@ import Gun from "gun";
 
 //
 let config = readConfiguration()
+var propresenter_state = 'disconnected';
 var propresenter_check_timeout;
 var propresenter_data = {};
 //
@@ -123,14 +124,14 @@ async function arena_update_clip(id, text) {
 		const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + id + '', obj);
 		//const response = await fetch('https://api.github.com/users/github');
 		if (!response.ok) {
-			console.error("Arena: PUT failed", id, obj);
+			console.error("Arena: [" + arena_state + "] PUT failed", id, obj);
 			return;
 			//return arena_reconnect();
 		}
 		return;
 		//
 	} catch (error) {
-		console.error("Arena: Connection error", error);
+		console.error("Arena: [" + arena_state + "] Connection error", error);
 		return;
 		//return arena_reconnect();
 	}
@@ -185,12 +186,12 @@ async function arena_execute_pab(slide) {
 			if ((clip.params.a && arena_cycle == true) || (clip.params.b && arena_cycle == false)) {
 				//chedule for trigger
 				if (same_layer_triger_protect == false) {
-					//console.warn("Arena: Trigger scheduled")
+					//console.warn("Aren[a: "+arena_state+" ]Trigger scheduled")
 					arena_scheduled_clips.push(clip)
 					//enable protection
 					same_layer_triger_protect = true;
 				} else {
-					console.warn("Arena: Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! Layer = '%d' Clip = '%s'", i, clip.name)
+					console.warn("Arena: [" + arena_state + "] Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! Layer = '%d' Clip = '%s'", i, clip.name)
 					//skip whole clip
 					continue;
 				}
@@ -220,11 +221,11 @@ async function arena_execute_pab(slide) {
 				specific = parseInt(clip.params.box, 10) - 1
 
 				if (actual.segments && actual.segments[specific]) {
-					console.log("Arena: SET Specific segment SPECIFIC")
+					console.log("Arena: [" + arena_state + "] SET Specific segment SPECIFIC")
 					actual = actual.segments[specific]
 				} else {
 					// box is wanted but not present, clear clip
-					console.log("Arena: SET Specific segment CLEAR")
+					console.log("Arena: [" + arena_state + "] SET Specific segment CLEAR")
 					update_count++
 					clear_count++
 					arena_update_clip(clip.id, '')
@@ -256,7 +257,7 @@ async function arena_execute_pab(slide) {
 			}
 
 			if (text_for_clip == undefined) {
-				console.warn("Arena: UNDEFINED TEXT", actual)
+				console.warn("Arena: [" + arena_state + "] UNDEFINED TEXT", actual)
 				update_count++
 				clear_count++
 				await arena_update_clip(clip.id, '')
@@ -278,11 +279,11 @@ async function arena_execute_pab(slide) {
 			clearTimeout(arena_execute_pab_triggers_timeout[arg_timeout_index])
 			arena_execute_pab_triggers(arg_clips)
 		}, 5, arena_scheduled_clips, i)
-		console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
+		console.log("Arena: [" + arena_state + "] Triggers count=%d", arena_scheduled_clips.length)
 		arena_scheduled_clips = []
 	}
 	if (clear_count == update_count) {
-		console.warn("Arena: CONNECT ALL CLEAR CLIPS")
+		console.warn("Arena: [" + arena_state + "] CONNECT ALL CLEAR CLIPS")
 		//arena_execute_pab_triggers(arena_scheduled_clips_clear)
 
 		arena_scheduled_clips_clear_timeout = setTimeout(function (arg_clips) {
@@ -293,7 +294,7 @@ async function arena_execute_pab(slide) {
 	//free the stack
 	arena_scheduled_clips_clear = []
 
-	console.log("Arena: Uptates count=%d, Clears count=%d", update_count, clear_count)
+	console.log("Arena: [" + arena_state + "] Uptates count=%d, Clears count=%d", update_count, clear_count)
 	//
 	//arena_execute_pab_triggers(arena_scheduled_clips)
 	//
@@ -385,12 +386,12 @@ async function propresenter_parse_slide() {
 
 async function propresenter_parse_presentation_data(data) {
 	if (!data) {
-		console.error("ProPresenter: presentation data unknown", data)
+		console.error("ProPresenter: [" + propresenter_state + "] presentation data unknown", data)
 		return
 	}
 
 	if (!data.presentation) {
-		console.error("ProPresenter: presentation data unknown", data)
+		console.error("ProPresenter: [" + propresenter_state + "] presentation data unknown", data)
 		return
 	}
 
@@ -403,12 +404,12 @@ async function propresenter_parse_presentation_data(data) {
 }
 
 async function propresenter_request_presentation(uuid = 'active', attempt = 0) {
-	console.info("ProPresenter: propresenter_request_presentation")
+	console.info("ProPresenter: [" + propresenter_state + "] propresenter_request_presentation")
 	try {
 		const response = await fetch('http://' + config.propresenter.host + ':' + config.propresenter.port + '/v1/presentation/' + uuid + '?chunked=false');
 		//const response = await fetch('https://api.github.com/users/github');
 		if (!response.ok) {
-			console.log("ProPresenter: presentation_request not OK");
+			console.log("ProPresenter: [" + propresenter_state + "] presentation_request not OK");
 			if (attempt < 2) {
 				return propresenter_request_presentation(uuid, attempt++);
 			}
@@ -416,13 +417,13 @@ async function propresenter_request_presentation(uuid = 'active', attempt = 0) {
 		}
 		let data = await response.json();
 		if (!data || data == undefined) {
-			console.log("ProPresenter: presentation_request undefined response");
+			console.log("ProPresenter: [" + propresenter_state + "] presentation_request undefined response");
 			return;
 		}
-		console.log("ProPresenter: presentation_request OK");
+		console.log("ProPresenter: [" + propresenter_state + "] presentation_request OK");
 		return propresenter_parse_presentation_data(data);
 	} catch (error) {
-		console.log("ProPresenter: presentation_request error", error);
+		console.log("ProPresenter: [" + propresenter_state + "] presentation_request error", error);
 		return;
 	}
 }
@@ -430,7 +431,7 @@ async function propresenter_request_presentation(uuid = 'active', attempt = 0) {
 async function propresenter_presentation_trigger_index(trigger) {
 	//console.log(trigger)
 	if (!trigger.presentationPath) {
-		console.error("ProPresenter: presentationPath unknown", trigger)
+		console.error("ProPresenter: [" + propresenter_state + "] presentationPath unknown", trigger)
 		return
 	}
 
@@ -439,7 +440,7 @@ async function propresenter_presentation_trigger_index(trigger) {
 	}
 
 	if (trigger.presentationPath != propresenter_data.trigger.presentationPath || !propresenter_data.presentation) {
-		console.warn("ProPresenter: presentationPath changed")
+		console.warn("ProPresenter: [" + propresenter_state + "] presentationPath changed")
 		return propresenter_request_presentation();
 	}
 
@@ -450,6 +451,7 @@ async function propresenter_presentation_trigger_index(trigger) {
 }
 
 async function propresenter_reconnect() {
+	propresenter_state == 'disconnected'
 	clearTimeout(propresenter_check_timeout);
 	propresenter_check_timeout = setTimeout(function () {
 		return propresenter_connect();
@@ -466,19 +468,18 @@ async function propresenter_connect() {
 	const ws = new WebSocket('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/remote');
 	//
 	ws.on('open', function open() {
-		console.log('ProPresenter: Connection Established');
-		console.log('ProPresenter: Sending Password');
-		config.propresenter.pass = 'observe'
+		console.log('ProPresenter: ["+propresenter_state+"] Connection Established');
+		console.log('ProPresenter: ["+propresenter_state+"] Sending Password');
 		ws.send('{"action":"authenticate","protocol":"701","password":"' + config.propresenter.pass + '"}');
 	});
     
 	//set error handle
 	ws.on('error', function (error) {
-		console.log("ProPresenter: Connection Error: " + error.toString());
+		console.log("ProPresenter: [" + propresenter_state + "] Connection Error: " + error.toString());
 	});
 	//set close handle
 	ws.on('close', function close() {
-		console.log('ProPresenter: Connection Closed');
+		console.log('ProPresenter: ["+propresenter_state+"] Connection Closed');
 		return propresenter_reconnect();
 	});
 	//setup message handle
@@ -490,15 +491,16 @@ async function propresenter_connect() {
 			data = JSON.parse(data);
 			//console.log(data);
 			if (!data || !data.authenticated) {
-				console.error("\n\n\nPropresenter: Auth failed\n\n\n")
+				console.error("\n\n\nPropresenter: [" + propresenter_state + "] Auth failed\n\n\n")
 				return propresenter_reconnect();
 			}
-			console.log("\n\n\nPropresenter: Auth OK\n\n\n")
+			propresenter_state == 'connected'
+			console.log("\n\n\nPropresenter: [" + propresenter_state + "] Auth OK\n\n\n")
 			return;
 		}
 
 		if (data.includes('"action":"presentationTriggerIndex"')) {
-			console.log("\n\n\n\n\nProPresenter: presentationTriggerIndex")
+			console.log("\n\n\n\n\nProPresenter: [" + propresenter_state + "] presentationTriggerIndex")
 			return propresenter_presentation_trigger_index(JSON.parse(data));
 		}
 
@@ -533,7 +535,7 @@ function readConfiguration() {
 }
 
 async function arena_reconnect() {
-	console.log("Arena: Connecting")
+	console.log("Arena: [" + arena_state + "] Connecting")
 	clearTimeout(arena_check_timeout)
 	arena_state = 'disconnected';
 	arena_check_timeout = setTimeout(function () {
@@ -547,14 +549,14 @@ async function arena_connect() {
 		const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1/composition');
 		//const response = await fetch('https://api.github.com/users/github');
 		if (!response.ok) {
-			console.log("Arena: Not connected");
+			console.log("Arena: [" + arena_state + "] Not connected");
 			return arena_reconnect();
 		}
-		console.log("Arena: Connection OK");
+		console.log("Arena: [" + arena_state + "] Connection OK");
 		arena_state = 'connected';
 		return arena_determine_clips();
 	} catch (error) {
-		console.log("Arena: Connection error");
+		console.log("Arena: [" + arena_state + "] Connection error");
 		return arena_reconnect();
 	}
 }
@@ -584,14 +586,14 @@ async function arena_execute_pab_triggers(clips, connect = true) {
 			}
 			//const response = await fetch('https://api.github.com/users/github');
 			if (!response.ok) {
-				console.error("Arena: Trigger failed");
+				console.error("Arena: [" + arena_state + "] Trigger failed");
 				continue;
 				//return arena_reconnect();
 			}
 			continue;
 			//
 		} catch (error) {
-			console.error("Arena: Connection error", error);
+			console.error("Arena: [" + arena_state + "] Connection error", error);
 			continue;
 			//return arena_reconnect();
 		}
@@ -720,7 +722,7 @@ function perform_manipulation(text_for_clip, clip) {
 }
 
 async function arena_determine_clips() {
-	console.log("Arena: arena_determine_clips");
+	console.log("Arena: [" + arena_state + "] arena_determine_clips");
 	//
 	// arena have http api so we dont know if is on or not we use check state before
 	if (arena_state != 'connected') {
@@ -733,19 +735,19 @@ async function arena_determine_clips() {
 		const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1/composition');
 		//const response = await fetch('https://api.github.com/users/github');
 		if (!response.ok) {
-			console.log("Arena: Response fail");
+			console.log("Arena: [" + arena_state + "] Response fail");
 			return arena_reconnect();
 		}
-		console.log("Arena: Response OK");
+		console.log("Arena: [" + arena_state + "] Response OK");
 		arena_state = 'connected';
 		data = await response.json();
 		if (!data || data == undefined) {
-			console.log("Arena: No data");
+			console.log("Arena: [" + arena_state + "] No data");
 			return arena_reconnect();
 		}
 		//
 	} catch (error) {
-		console.log("Arena: Response error", error);
+		console.log("Arena: [" + arena_state + "] Response error", error);
 		return arena_reconnect();
 	}
 
