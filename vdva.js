@@ -1,0 +1,727 @@
+import fs from 'fs';
+import fetch from 'node-fetch'
+import WebSocket from 'ws';
+
+//
+let config = readConfiguration()
+var propresenter_check_timeout;
+var propresenter_data = {};
+//
+//
+const arena_path_clip_by_id = "/composition/clips/by-id";
+const arena_path_layer_by_id = "/composition/layers/by-id";
+var arena_state = 'disconnected';
+var arena_check_timeout;
+var arena_cycle = false;
+var arena = []
+//
+
+
+// run app
+propresenter_connect()
+arena_connect()
+
+async function arena_update_clip(id, text) {
+	//console.log("arena_update_clip", id)
+	let obj = {
+		method: 'PUT',
+		body: JSON.stringify({ "video": { "sourceparams": { "Text": text } } }),
+		headers: { 'Content-Type': 'application/json' }
+	}
+
+	try {
+		const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + id + '', obj);
+		//const response = await fetch('https://api.github.com/users/github');
+		if (!response.ok) {
+			console.error("Arena: PUT failed", id, obj);
+			return;
+			//return arena_reconnect();
+		}
+		return;
+		//
+	} catch (error) {
+		console.error("Arena: Connection error", error);
+		return;
+		//return arena_reconnect();
+	}
+}
+
+let arena_execute_pab_triggers_timeout = []
+let arena_scheduled_clips_clear_timeout = null;
+async function arena_execute_pab(slide) {
+
+	if (arena_state != 'connected') {
+		console.error("Execute: Arena NOT connected")
+		return;
+	}
+
+	//reverse cycle on each slide
+	arena_cycle = !arena_cycle;
+	//
+	if (arena.length == 0) {
+		console.log("arena_execute_pab", "No clips")
+		return;
+	}
+	//
+	let clip
+	let layer
+	let text_for_clip = ''
+	let arena_scheduled_clips = []
+	let arena_scheduled_clips_clear = []
+	let actual
+	let same_layer_triger_protect = false
+	let update_count = 0;
+	let clear_count = 0;
+	let specific = 0
+	//
+	for (var i = 0; i < arena.length; i++) {
+		//console.log('LAYER %d\n', i)
+		//layers
+		layer = arena[i]
+		// disable protection for triggering on same page
+		same_layer_triger_protect = false
+		//
+		for (var x = 0; x < layer.length; x++) {
+			//slide
+			//console.log('\n\tclip %d', x)
+			clip = layer[x]
+
+			if (clip.params.c) {
+				//clear clips are just for trigger so schedule and skip
+				arena_scheduled_clips_clear.push(clip)
+				continue;
+			}
+			//
+			if ((clip.params.a && arena_cycle == true) || (clip.params.b && arena_cycle == false)) {
+				//chedule for trigger
+				if (same_layer_triger_protect == false) {
+					//console.warn("Arena: Trigger scheduled")
+					arena_scheduled_clips.push(clip)
+					//enable protection
+					same_layer_triger_protect = true;
+				} else {
+					console.warn("Arena: Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! Layer = '%d' Clip = '%s'", i, clip.name)
+					//skip whole clip
+					continue;
+				}
+                
+			}
+
+			// determine cycle
+			if (clip.params.a && arena_cycle == false || clip.params.b && arena_cycle == true) {
+				// if clip is in for oposite cylcle skip update
+				continue;
+			}
+
+			actual = slide
+
+			if (actual.text == undefined || actual.text == '') {
+				//just clear the clip
+				console.log("CLEAR clip")
+				update_count++
+				clear_count++
+				await arena_update_clip(clip.id, '')
+				continue;
+			}
+
+			// check if the clip wants specific segment
+			if (clip.params.box) {
+				//console.log("WANTED Specific segment", clip.params.box, actual.segments)
+				specific = parseInt(clip.params.box, 10) - 1
+
+				if (actual.segments && actual.segments[specific]) {
+					console.log("Arena: SET Specific segment SPECIFIC")
+					actual = actual.segments[specific]
+				} else {
+					// box is wanted but not present, clear clip
+					console.log("Arena: SET Specific segment CLEAR")
+					update_count++
+					clear_count++
+					arena_update_clip(clip.id, '')
+					continue;
+				}
+			}
+			//
+			//console.log("ACTUAL", actual)
+			//default text
+			text_for_clip = actual.txt
+			//
+
+			if (clip.params.fw) {
+				//first word only
+				text_for_clip = actual.fw
+			} else if (clip.params.lw) {
+				//last word only
+				text_for_clip = actual.lw
+			} else if (clip.params.pn || clip.params.pnc) {
+				//clip needs presentation name
+				text_for_clip = actual.presentation_title
+			}
+
+			//perform manupulators
+			text_for_clip = perform_manipulation(text_for_clip, clip);
+
+			if (text_for_clip && clip.params.sg && text_for_clip.length > clip.params.sg) {
+				console.warn("\n\n!!!TEXT FOR CLIP OVERFLOW !!!\n\n")
+			}
+
+			if (text_for_clip == undefined) {
+				console.warn("Arena: UNDEFINED TEXT", actual)
+				update_count++
+				clear_count++
+				await arena_update_clip(clip.id, '')
+				continue;
+			}
+
+			//update clip
+			update_count++
+			await arena_update_clip(clip.id, text_for_clip)
+
+		}
+
+		//because this is the break point for triggers we need to hide clear clips
+		if (arena_scheduled_clips.length > 0) {
+			arena_execute_pab_triggers(arena_scheduled_clips_clear, false) //false means disconnect
+		}
+
+		arena_execute_pab_triggers_timeout[i] = setTimeout(function (arg_clips, arg_timeout_index) {
+			clearTimeout(arena_execute_pab_triggers_timeout[arg_timeout_index])
+			arena_execute_pab_triggers(arg_clips)
+		}, 5, arena_scheduled_clips, i)
+		console.log("Arena: Triggers count=%d", arena_scheduled_clips.length)
+		arena_scheduled_clips = []
+	}
+	if (clear_count == update_count) {
+		console.warn("Arena: CONNECT ALL CLEAR CLIPS")
+		//arena_execute_pab_triggers(arena_scheduled_clips_clear)
+
+		arena_scheduled_clips_clear_timeout = setTimeout(function (arg_clips) {
+			clearTimeout(arena_scheduled_clips_clear);
+			arena_execute_pab_triggers(arg_clips)
+		}, 15, arena_scheduled_clips_clear)
+	}
+	//free the stack
+	arena_scheduled_clips_clear = []
+
+	console.log("Arena: Uptates count=%d, Clears count=%d", update_count, clear_count)
+	//
+	//arena_execute_pab_triggers(arena_scheduled_clips)
+	//
+	console.log("\n\n")
+}
+
+function parse_slide_segments(segments) {
+	//
+	let segments_ = []
+	//
+	for (var i = 0; i < segments.length; i++) {
+		// trim new lines
+		segments[i] = segments[i].replace(/\{empty\}/g, "").replace(/(^\n+)|(\n+$)/g, "").trim()
+
+		//clear out only dot
+		if (segments[i] == '.' || segments[i] == '-' || segments[i] == '=') {
+			segments[i] = ''
+		}
+		// first word ana last word is little tricky because wo cant read the words and we dont know the context
+		// we use the litle trick to "join" common words with pre-words
+		//
+		let words = segments[i].split(' ')
+		//
+		let first_word = parse_first_word(words)
+		let last_word = parse_last_word(words)
+		//   
+		// manipulaciu robim pri uploade, potrebujem uz len txt, fw, lw
+		segments_.push({
+			txt: segments[i],
+			fw: first_word,
+			lw: last_word
+		})
+	}
+	//
+	return segments_;
+}
+
+async function propresenter_parse_slide() {
+
+	var index = 0;
+	//
+	for (var g = 0; g < propresenter_data.presentation.groups.length; g++) {
+		let group = propresenter_data.presentation.groups[g]
+		//console.log("Grp", group)
+		for (var s = 0; s < group.slides.length; s++) {
+			let slide = group.slides[s]
+			//console.log("slide", slide);
+			if (index == propresenter_data.trigger.slideIndex) {
+				slide.presentation_title = propresenter_data.presentation.id.name
+				if (slide.enabled == false || slide.text == '') {
+					slide.text = null
+				}
+
+
+				//console.log(slide);
+				if (typeof slide.text == 'string') {
+					// optimalisation
+					let text = slide.text
+
+					text = text.replace(/^\x82+|\x82+$/gm, "")
+
+					text = text.replace(/(^\r+)|(\r+$)/g, "").replace(/\n|\x0B|\x0C|\u0085|\u2028|\u2029/g, "\n")
+					//replace non-printable char
+					text = text.replace(/\u00a0/gm, " ");
+
+					// reverse order
+					//split = txt.split("\r").reverse()
+					// standard order
+					let split = text.split("\r")
+					//
+					text = parse_slide_segments([split.join("\r")])[0]
+					//
+					slide.txt = text.txt
+					slide.fw = text.fw
+					slide.lw = text.lw
+					//
+					if (split.length > 1) {
+						slide.segments = parse_slide_segments(split)
+					}
+				}
+
+				console.log("Matched slide", slide);
+				return arena_execute_pab(slide);
+			}
+			index++;
+		}
+	}
+}
+
+async function propresenter_parse_presentation_data(data) {
+	if (!data) {
+		console.error("ProPresenter: presentation data unknown", data)
+		return
+	}
+
+	if (!data.presentation) {
+		console.error("ProPresenter: presentation data unknown", data)
+		return
+	}
+
+	//store presentation
+	propresenter_data.presentation = data.presentation
+	propresenter_data.presentation.timestamp = Date.now();
+	//
+
+	return propresenter_parse_slide()
+}
+
+async function propresenter_request_presentation(uuid = 'active', attempt = 0) {
+	console.info("ProPresenter: propresenter_request_presentation")
+	try {
+		const response = await fetch('http://' + config.propresenter.host + ':' + config.propresenter.port + '/v1/presentation/' + uuid + '?chunked=false');
+		//const response = await fetch('https://api.github.com/users/github');
+		if (!response.ok) {
+			console.log("ProPresenter: presentation_request not OK");
+			if (attempt < 2) {
+				return propresenter_request_presentation(uuid, attempt++);
+			}
+			return;
+		}
+		let data = await response.json();
+		if (!data || data == undefined) {
+			console.log("ProPresenter: presentation_request undefined response");
+			return;
+		}
+		console.log("ProPresenter: presentation_request OK");
+		return propresenter_parse_presentation_data(data);
+	} catch (error) {
+		console.log("ProPresenter: presentation_request error", error);
+		return;
+	}
+}
+
+async function propresenter_presentation_trigger_index(trigger) {
+	//console.log(trigger)
+	if (!trigger.presentationPath) {
+		console.error("ProPresenter: presentationPath unknown", trigger)
+		return
+	}
+
+	if (!propresenter_data.trigger) {
+		propresenter_data.trigger = trigger;
+	}
+
+	if (trigger.presentationPath != propresenter_data.trigger.presentationPath || !propresenter_data.presentation) {
+		console.warn("ProPresenter: presentationPath changed")
+		return propresenter_request_presentation();
+	}
+
+	// store data of actual trigger
+	propresenter_data.trigger = trigger;
+	//
+	return propresenter_parse_slide();	
+}
+
+async function propresenter_reconnect() {
+	clearTimeout(propresenter_check_timeout);
+	propresenter_check_timeout = setTimeout(function () {
+		return propresenter_connect();
+	}, 10000);
+}
+
+async function propresenter_connect() {
+	//refresh config
+	if (config.propresenter.enabled !== true) {
+		console.warn("\n------\nProPresenter Module is disabled!\n------\n");
+		return;
+	}
+	console.log('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/remote');
+	const ws = new WebSocket('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/remote');
+	//
+	ws.on('open', function open() {
+		console.log('ProPresenter: Connection Established');
+		console.log('ProPresenter: Sending Password');
+		config.propresenter.pass = 'observe'
+		ws.send('{"action":"authenticate","protocol":"701","password":"' + config.propresenter.pass + '"}');
+	});
+    
+	//set error handle
+	ws.on('error', function (error) {
+		console.log("ProPresenter: Connection Error: " + error.toString());
+	});
+	//set close handle
+	ws.on('close', function close() {
+		console.log('ProPresenter: Connection Closed');
+		return propresenter_reconnect();
+	});
+	//setup message handle
+	ws.on('message', function message(data) {
+		data = data.toString()
+		console.log(data)
+		//check fv data before json parse to safe cpu
+		if (data.includes('"action":"authenticate"')) {
+			data = JSON.parse(data);
+			//console.log(data);
+			if (!data || !data.authenticated) {
+				console.error("\n\n\nPropresenter: Auth failed\n\n\n")
+				return propresenter_reconnect();
+			}
+			console.log("\n\n\nPropresenter: Auth OK\n\n\n")
+			return;
+		}
+
+		if (data.includes('"action":"presentationTriggerIndex"')) {
+			console.log("\n\n\n\n\nProPresenter: presentationTriggerIndex")
+			return propresenter_presentation_trigger_index(JSON.parse(data));
+		}
+
+		return;
+        
+	});
+}
+
+function readConfiguration() {
+	var config_ = null;
+	try {
+		config_ = JSON.parse(fs.readFileSync('./config.json'))
+	} catch (e) {
+		try {
+			config_ = JSON.parse(fs.readFileSync('./config_default.json'))
+		} catch (e) {
+			console.error("No config file", e)
+			console.error("No config file")
+			console.error("No config file")
+			console.error("No config file")
+			console.error("No config file")
+			console.error("No config file")
+			console.error("No config file")
+			console.error("No config file")
+			//die
+			process.exit()
+			return undefined
+		}
+	}
+	console.log("CONFIG", config_)
+	return config_;
+}
+
+async function arena_reconnect() {
+	console.log("Arena: Connecting")
+	clearTimeout(arena_check_timeout)
+	arena_state = 'disconnected';
+	arena_check_timeout = setTimeout(function () {
+		return arena_connect();
+	}, 10000)
+}
+
+async function arena_connect() {
+	clearTimeout(arena_check_timeout)
+	try {
+		const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1/composition');
+		//const response = await fetch('https://api.github.com/users/github');
+		if (!response.ok) {
+			console.log("Arena: Not connected");
+			return arena_reconnect();
+		}
+		console.log("Arena: Connection OK");
+		arena_state = 'connected';
+		return arena_determine_clips();
+	} catch (error) {
+		console.log("Arena: Connection error");
+		return arena_reconnect();
+	}
+}
+
+async function arena_execute_pab_triggers(clips, connect = true) {
+
+	if (arena_state != 'connected') {
+		console.error("Execute: Arena NOT connected")
+		return;
+	}
+
+	for (var i = 0; i < clips.length; i++) {
+		//
+		//console.log("arena_execute_pab_triggers", clips[i])
+		try {
+			var response = null;
+			if (connect) {
+				response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + clips[i].id + '/connect', { method: 'POST', body: '' });
+			} else {
+				console.log('CLEAR WHOLE LAYER?????');
+				// /composition/layers/by-id/{layer-id}/clear
+				response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_layer_by_id + '/' + clips[i].layer_id + '/clear', { method: 'POST', body: '' });
+            
+			}
+			if (!response) {
+				console.error("Response not defined")
+			}
+			//const response = await fetch('https://api.github.com/users/github');
+			if (!response.ok) {
+				console.error("Arena: Trigger failed");
+				continue;
+				//return arena_reconnect();
+			}
+			continue;
+			//
+		} catch (error) {
+			console.error("Arena: Connection error", error);
+			continue;
+			//return arena_reconnect();
+		}
+	}
+}
+
+function parse_first_word(words) {
+	//
+	let word = ''
+	let a = (words[0] !== undefined && words[0] !== '') ? words[0].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
+	// feel fre to modify to your needs
+	if (a.length > 5) {
+		word = a;
+	} else {
+		let b = (words[1] !== undefined && words[1] !== '') ? words[1].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
+		if (a == 'a' || a == 'A') {
+			word = b;
+		} else {
+			word = a + ' ' + b
+		}
+       
+	}
+	// add spaces between words to enhance effect
+	word = word.replace(/^[\ ]+|[\ ]+$/gm, "").replace(/\ /, "   ");
+	//
+	return word
+}
+
+function parse_last_word(words) {
+	//
+	let word = ''
+	let a = (words[words.length - 1] !== undefined && words[words.length - 1] !== '') ? words[words.length - 1].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
+	//.replace(/^\n+|\n+$/gm, "")
+	// feel fre to modify to your needs is very dependant on local language
+	if (a.length > 5) {
+		word = a;
+	} else {    
+		let b = (words[words.length - 2] !== undefined && words[words.length - 2] !== '') ? words[words.length - 2].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
+		//
+		if (b == "to") {
+			let c = (words[words.length - 3] !== undefined && words[words.length - 3] !== '') ? words[words.length - 3].replace(/^[\ \,\.\:\;\"\'\(\)\-\n]+|[\ \,\.\:\;\"\'\(\)\-\n]+$/gm, "") : ''
+			word = c + ' ' + b + ' ' + a;
+		} else {
+			if (b == "ma" || b == "sa") {
+				word = a;
+			} else {
+				word = b + ' ' + a;
+			}
+		}
+	}
+	// add spaces between words to enhance effect
+	word = word.replace(/^[\ ]+|[\ ]+$/gm, "").replace(/\ /, "   ");
+	//
+	return word
+}
+
+//nesmie byt async
+function perform_manipulation(text_for_clip, clip) {
+
+	if (text_for_clip == undefined || text_for_clip == '') {
+		return text_for_clip
+	}
+
+	//
+	text_for_clip = text_for_clip.normalize('NFC')
+	//
+
+	if (clip.params.pnc) {
+		text_for_clip = text_for_clip.replace(/^([\d]+)/g, "").trim();
+	}
+
+	if (clip.params.uc) {
+		//uppercase
+		text_for_clip = text_for_clip.toUpperCase()
+	} else if (clip.params.lc) {
+		//lowercase
+		text_for_clip = text_for_clip.toLowerCase()
+	} else if (clip.params.cp) {
+		//caps
+		text_for_clip = text_for_clip.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())
+	}
+
+	if (clip.params.re) {
+		//replace enter with space
+		text_for_clip = text_for_clip.replace(/[\r\n]/g, " ")
+	} 
+
+	if (clip.params.rd && clip.params.rc) {
+		//trim dot and comma
+		text_for_clip = text_for_clip.replace(/(^(\.|\,)+)|((\.|\,)+$)/g, "")
+	} else {
+		if (clip.params.rd) {
+			//trim just dot
+			text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
+		} 
+
+		if (clip.params.rc) {
+			//trim just comma
+			text_for_clip = text_for_clip.replace(/(^\.+)|(\.+$)/g, "")
+		} 
+	}
+
+	if (clip.params.rv) {
+		//remove all numbering
+		text_for_clip = text_for_clip.replaceAll(/\@.*?\@/g, "");
+	} else {
+		// verses
+		let match = text_for_clip.matchAll(/\@(.*?)\@/g);
+
+		for (const m of match) {
+			//console.log(m)
+			let n = '';
+			for (var i = 0; i < m[1].length; i++) {
+				n = n + sup_array[parseInt(m[1][i], 10)]
+			}
+			//let regex = new RegExp('.*\{\{\{\{' + m[1] + '\}\}\}\}.*', 'g');
+			let regex = new RegExp('\@' + m[1] + '\@', 'g');
+			//console.log(regex)
+			text_for_clip = text_for_clip.replaceAll(regex, n + sup_array[10]);
+
+			//console.log(m[1], n, text_for_clip);
+		}
+	}
+
+	return text_for_clip
+}
+
+async function arena_determine_clips() {
+	console.log("Arena: arena_determine_clips");
+	//
+	// arena have http api so we dont know if is on or not we use check state before
+	if (arena_state != 'connected') {
+		return arena_connect()
+	}
+	// arena is connected
+
+	let data;
+	try {
+		const response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1/composition');
+		//const response = await fetch('https://api.github.com/users/github');
+		if (!response.ok) {
+			console.log("Arena: Response fail");
+			return arena_reconnect();
+		}
+		console.log("Arena: Response OK");
+		arena_state = 'connected';
+		data = await response.json();
+		if (!data || data == undefined) {
+			console.log("Arena: No data");
+			return arena_reconnect();
+		}
+		//
+	} catch (error) {
+		console.log("Arena: Response error", error);
+		return arena_reconnect();
+	}
+
+	// check layers
+	if (data.layers === undefined) {
+		console.log("No layers", data);
+		return arena_reconnect();
+	}
+
+	let layer
+	let clips
+	let clip
+	let clip_name_pab
+	//reset global
+	arena = []
+	clips = []
+	//
+	// layers from top to bottom
+	// top layers is more important
+	let layer_id = null
+	for (var i = data.layers.length - 1; i >= 0; i--) {
+		//travers all layers
+		layer_id = data.layers[i].id
+		layer = data.layers[i].clips;
+		clips = []
+		//console.log(clips);
+		for (var x = 0; x < layer.length; x++) {
+			//travers all clips in layer
+			if (layer[x].name == undefined || layer[x].name.value == undefined || layer[x].name.value == '' || !layer[x].name.value.includes("#pab")) {
+				//skip clip because don have pab tag
+				continue;
+			}
+			clip_name_pab = layer[x].name.value.match(/#pab\S*/g)[0]
+			//
+			clip = {
+				id: layer[x].id,
+				layer_id: layer_id,
+				name: layer[x].name.value,
+				params: {
+					box: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
+					rd: (clip_name_pab.match(/.*\-rd(?!\w).*/g)) ? true : false, //remove dots
+					rc: (clip_name_pab.match(/.*\-rc(?!\w).*/g)) ? true : false, //remove commas
+					re: (clip_name_pab.match(/.*\-re(?!\w).*/g)) ? true : false, //remove new lines
+					rv: (clip_name_pab.match(/.*\-rv(?!\w).*/g)) ? true : false, //remove verses
+					uc: (clip_name_pab.match(/.*\-uc(?!\w).*/g)) ? true : false,
+					lc: (clip_name_pab.match(/.*\-lc(?!\w).*/g)) ? true : false,
+					cp: (clip_name_pab.match(/.*\-cp(?!\w).*/g)) ? true : false,
+					//
+					pn: (clip_name_pab.match(/.*\-pn(?!\w).*/g)) ? true : false, //presentation name
+					pnc: (clip_name_pab.match(/.*\-pnc(?!\w).*/g)) ? true : false, //presentation name
+					fw: (clip_name_pab.match(/.*\-fw(?!\w).*/g)) ? true : false,
+					lw: (clip_name_pab.match(/.*\-lw(?!\w).*/g)) ? true : false,
+					//
+					a: (clip_name_pab.match(/.*\-a(?!\w).*/g)) ? true : false, //trigger on a cycle
+					b: (clip_name_pab.match(/.*\-b(?!\w).*/g)) ? true : false, //trigger on b cycle
+					c: (clip_name_pab.match(/.*\-c(?!\w).*/g)) ? true : false, //trigger on clear
+					sg: (clip_name_pab.match(/.*\-sg(\d+)/g)) ? parseInt(clip_name_pab.match(/.*\-sg(\d+)/g)[0].match(/.*\-sg(\d+)/)[1], 10) : false, //size guard
+				}
+			}
+            
+			// now we populate array with objects
+			clips.push(clip)
+		}
+		if (clips.length > 0) {
+			console.log(clips)
+			arena.push(clips)
+		}     
+	}
+}

@@ -348,6 +348,7 @@ async function propresenter_parse_slide(data) {
                 break;
         }
     }
+    console.log(slide.current)
     return execute_pab_slide(slide)
 }
 
