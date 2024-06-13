@@ -435,18 +435,18 @@ async function propresenter_presentation_trigger_index(trigger) {
 		return
 	}
 
-	if (!propresenter_data.trigger) {
-		propresenter_data.trigger = trigger;
-	}
-
-	if (trigger.presentationPath != propresenter_data.trigger.presentationPath || !propresenter_data.presentation) {
+	if (!propresenter_data.presentation || trigger.presentationPath != propresenter_data.trigger.presentationPath || parseInt(trigger.slideIndex, 10) == 0) {
 		console.warn("ProPresenter: [" + propresenter_state + "] presentationPath changed")
+		// store data of actual trigger
+		propresenter_data.trigger = trigger;
+		//
 		return propresenter_request_presentation();
 	}
 
 	// store data of actual trigger
 	propresenter_data.trigger = trigger;
 	//
+
 	return propresenter_parse_slide();	
 }
 

@@ -128,6 +128,7 @@ function propresenter_connect() {
     //setup message handle
     ws.on('message', function message(data) {
         data = data.toString()
+        console.log(data)
         //check fv data before json parse to safe cpu
         if (data.includes('"acn":"ath"')) {
             data = JSON.parse(data);
