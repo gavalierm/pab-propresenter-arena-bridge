@@ -153,7 +153,7 @@ async function arena_execute_pab(slide) {
 		console.error("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
 		console.error("Arena: [" + arena_state + "]         NO CLIPS on arena_execute_pab")
 		console.error("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
-		return;
+		return arena_determine_clips();
 	}
 	//
 	let clip
