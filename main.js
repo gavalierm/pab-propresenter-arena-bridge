@@ -142,7 +142,7 @@ let arena_execute_pab_trigger_timeout = []
 async function arena_execute_pab(slide) {
 
 	if (arena_state != 'connected') {
-		console.error("Execute: Arena NOT connected")
+		console.error("Arena: [" + arena_state + "] Arena NOT connected")
 		return;
 	}
 
@@ -150,7 +150,9 @@ async function arena_execute_pab(slide) {
 	arena_cycle = !arena_cycle;
 	//
 	if (arena.length == 0) {
-		console.log("arena_execute_pab", "No clips")
+		console.error("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
+		console.error("Arena: [" + arena_state + "]         NO CLIPS on arena_execute_pab")
+		console.error("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
 		return;
 	}
 	//
@@ -207,9 +209,9 @@ async function arena_execute_pab(slide) {
 				specific = parseInt(clip.params.box, 10) - 1
 				//
 				if (!actual.segments && specific === 0) {
-					console.log("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
-					console.log("Arena: [" + arena_state + "]         Segment [ %d ] requested, but slide does NOT have segments. Dot '.' HACK is missing?! [%s, %s]", clip.params.box, clip.layer_name, clip.clip_name)
-					console.log("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
+					console.warn("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
+					console.warn("Arena: [" + arena_state + "]         Segment [ %d ] requested, but slide does NOT have segments. Dot '.' HACK is missing?! [%s, %s]", clip.params.box, clip.layer_name, clip.clip_name)
+					console.warn("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
 					actual.segments = []
 					actual.segments[specific] = { txt: actual.txt, fw: actual.fw, lw: actual.lw }
 				}
