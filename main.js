@@ -137,8 +137,8 @@ async function arena_update_clip(id, text) {
 	}
 }
 
-let arena_execute_pab_triggers_timeout = []
-let arena_scheduled_clips_clear_timeout = null;
+let arena_execute_pab_trigger_timeout = []
+
 async function arena_execute_pab(slide) {
 
 	if (arena_state != 'connected') {
@@ -157,41 +157,35 @@ async function arena_execute_pab(slide) {
 	let clip
 	let layer
 	let text_for_clip = ''
-	let arena_scheduled_clips = []
-	let arena_scheduled_clips_clear = []
+	let arena_scheduled_clip = null
 	let actual
 	let same_layer_triger_protect = false
 	let update_count = 0;
 	let clear_count = 0;
+	let triggers_count = 0;
 	let specific = 0
 	//
-	for (var i = 0; i < arena.length; i++) {
+	for (var layer_pk = 0; layer_pk < arena.length; layer_pk++) {
 		//console.log('LAYER %d\n', i)
 		//layers
-		layer = arena[i]
+		layer = arena[layer_pk]
 		// disable protection for triggering on same page
 		same_layer_triger_protect = false
 		//
-		for (var x = 0; x < layer.length; x++) {
+		for (var clip_pk = 0; clip_pk < layer.length; clip_pk++) {
 			//slide
-			//console.log('\n\tclip %d', x)
-			clip = layer[x]
-
-			if (clip.params.c) {
-				//clear clips are just for trigger so schedule and skip
-				arena_scheduled_clips_clear.push(clip)
-				continue;
-			}
+			//console.log('\n\tclip %d', clip_pk)
+			clip = layer[clip_pk]
 			//
 			if ((clip.params.a && arena_cycle == true) || (clip.params.b && arena_cycle == false)) {
 				//chedule for trigger
 				if (same_layer_triger_protect == false) {
 					//console.warn("Aren[a: "+arena_state+" ]Trigger scheduled")
-					arena_scheduled_clips.push(clip)
+					arena_scheduled_clip = clip
 					//enable protection
 					same_layer_triger_protect = true;
 				} else {
-					console.warn("Arena: [" + arena_state + "] Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! Layer = '%d' Clip = '%s'", i, clip.name)
+					console.warn("Arena: [" + arena_state + "] Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! [%s, %s]\n", clip.layer_name, clip.clip_name)
 					//skip whole clip
 					continue;
 				}
@@ -206,27 +200,26 @@ async function arena_execute_pab(slide) {
 
 			actual = slide
 
-			if (actual.text == undefined || actual.text == '') {
-				//just clear the clip
-				console.log("CLEAR clip")
-				update_count++
-				clear_count++
-				await arena_update_clip(clip.id, '')
-				continue;
-			}
-
 			// check if the clip wants specific segment
 			if (clip.params.box) {
-				//console.log("WANTED Specific segment", clip.params.box, actual.segments)
+				console.log("Arena: [" + arena_state + "] Segment [ %d ] requested [%s, %s]", clip.params.box, clip.layer_name, clip.clip_name)
+				//console.log("Arena: [" + arena_state + "] Segments", actual)
 				specific = parseInt(clip.params.box, 10) - 1
+				//
+				if (!actual.segments && specific === 0) {
+					console.log("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
+					console.log("Arena: [" + arena_state + "]         Segment [ %d ] requested, but slide does NOT have segments. Dot '.' HACK is missing?! [%s, %s]", clip.params.box, clip.layer_name, clip.clip_name)
+					console.log("Arena: [" + arena_state + "] WARNING !!!!!!!!!!!!!!!!!!!")
+					actual.segments = []
+					actual.segments[specific] = { txt: actual.txt, fw: actual.fw, lw: actual.lw }
+				}
 
 				if (actual.segments && actual.segments[specific]) {
-					console.log("Arena: [" + arena_state + "] SET Specific segment SPECIFIC")
+					console.log("Arena: [" + arena_state + "] Segment [ %d ] UPDATE [%s, %s]\n", clip.params.box, clip.layer_name, clip.clip_name)
 					actual = actual.segments[specific]
 				} else {
 					// box is wanted but not present, clear clip
-					console.log("Arena: [" + arena_state + "] SET Specific segment CLEAR")
-					update_count++
+					console.log("Arena: [" + arena_state + "] Segment [ %d ] CLEAR [%s, %s]\n", clip.params.box, clip.layer_name, clip.clip_name)
 					clear_count++
 					arena_update_clip(clip.id, '')
 					continue;
@@ -247,18 +240,18 @@ async function arena_execute_pab(slide) {
 			} else if (clip.params.pn || clip.params.pnc) {
 				//clip needs presentation name
 				text_for_clip = actual.presentation_title
+				console.log("\nArena: [" + arena_state + "] Presentation title requested [%s, %s]", clip.layer_name, clip.clip_name, [text_for_clip])
 			}
 
 			//perform manupulators
 			text_for_clip = perform_manipulation(text_for_clip, clip);
 
 			if (text_for_clip && clip.params.sg && text_for_clip.length > clip.params.sg) {
-				console.warn("\n\n!!!TEXT FOR CLIP OVERFLOW !!!\n\n")
+				console.warn("\n\n!!!TEXT FOR CLIP OVERFLOW !!!\n\n [%s, %s]\n", clip.layer_name, clip.clip_name)
 			}
 
 			if (text_for_clip == undefined) {
-				console.warn("Arena: [" + arena_state + "] UNDEFINED TEXT", actual)
-				update_count++
+				console.warn("Arena: [" + arena_state + "] UNDEFINED TEXT [%s, %s]\n", clip.layer_name, clip.clip_name)
 				clear_count++
 				await arena_update_clip(clip.id, '')
 				continue;
@@ -269,34 +262,23 @@ async function arena_execute_pab(slide) {
 			await arena_update_clip(clip.id, text_for_clip)
 
 		}
-
-		//because this is the break point for triggers we need to hide clear clips
-		if (arena_scheduled_clips.length > 0) {
-			arena_execute_pab_triggers(arena_scheduled_clips_clear, false) //false means disconnect
+		if (arena_scheduled_clip) {
+			arena_execute_pab_trigger_timeout[layer_pk] = setTimeout(function (arg_clip, arg_layer_pk) {
+				clearTimeout(arena_execute_pab_trigger_timeout[arg_layer_pk])
+				arena_execute_pab_trigger(arg_clip)
+			}, 5, arena_scheduled_clip, layer_pk)
+			//
+			triggers_count++
 		}
-
-		arena_execute_pab_triggers_timeout[i] = setTimeout(function (arg_clips, arg_timeout_index) {
-			clearTimeout(arena_execute_pab_triggers_timeout[arg_timeout_index])
-			arena_execute_pab_triggers(arg_clips)
-		}, 5, arena_scheduled_clips, i)
-		console.log("Arena: [" + arena_state + "] Triggers count=%d", arena_scheduled_clips.length)
-		arena_scheduled_clips = []
+		//
+		arena_scheduled_clip = null
 	}
-	if (clear_count == update_count) {
-		console.warn("Arena: [" + arena_state + "] CONNECT ALL CLEAR CLIPS")
-		//arena_execute_pab_triggers(arena_scheduled_clips_clear)
-
-		arena_scheduled_clips_clear_timeout = setTimeout(function (arg_clips) {
-			clearTimeout(arena_scheduled_clips_clear);
-			arena_execute_pab_triggers(arg_clips)
-		}, 15, arena_scheduled_clips_clear)
-	}
-	//free the stack
-	arena_scheduled_clips_clear = []
-
-	console.log("Arena: [" + arena_state + "] Uptates count=%d, Clears count=%d", update_count, clear_count)
+	console.log("\n")
+	console.log("Arena: [" + arena_state + "] Updated: %d", update_count)
+	console.log("Arena: [" + arena_state + "] Cleared: %d", clear_count)
+	console.log("Arena: [" + arena_state + "] Triggered: %d", triggers_count)
 	//
-	//arena_execute_pab_triggers(arena_scheduled_clips)
+	//arena_execute_pab_trigger(arena_scheduled_clip)
 	//
 	console.log("\n\n")
 }
@@ -376,7 +358,7 @@ async function propresenter_parse_slide() {
 					}
 				}
 
-				console.log("Matched slide", slide);
+				console.log("\nProPresenter: [" + propresenter_state + "] Matched slide", slide);
 				return arena_execute_pab(slide);
 			}
 			index++;
@@ -561,7 +543,7 @@ async function arena_connect() {
 	}
 }
 
-async function arena_execute_pab_triggers(clips, connect = true) {
+async function arena_execute_pab_trigger(clips, connect = true) {
 
 	if (arena_state != 'connected') {
 		console.error("Execute: Arena NOT connected")
@@ -570,7 +552,7 @@ async function arena_execute_pab_triggers(clips, connect = true) {
 
 	for (var i = 0; i < clips.length; i++) {
 		//
-		//console.log("arena_execute_pab_triggers", clips[i])
+		//console.log("arena_execute_pab_trigger", clips[i])
 		try {
 			var response = null;
 			if (connect) {
@@ -662,7 +644,7 @@ function perform_manipulation(text_for_clip, clip) {
 	//
 
 	if (clip.params.pnc) {
-		text_for_clip = text_for_clip.replace(/^([\d]+)/g, "").trim();
+		text_for_clip = text_for_clip.replace(/^([\d]+)/g, "").replace(/\_/g, " ").replace(/([\ ]+)/g, " ").trim();
 	}
 
 	if (clip.params.uc) {
@@ -768,8 +750,11 @@ async function arena_determine_clips() {
 	// layers from top to bottom
 	// top layers is more important
 	let layer_id = null
-	for (var i = data.layers.length - 1; i >= 0; i--) {
+	let layer_name = null
+	for (var i = 0; i < data.layers.length; i++) {
 		//travers all layers
+
+		layer_name = data.layers[i].name.value.replace("#", i + 1)
 		layer_id = data.layers[i].id
 		layer = data.layers[i].clips;
 		clips = []
@@ -780,12 +765,16 @@ async function arena_determine_clips() {
 				//skip clip because don have pab tag
 				continue;
 			}
+			//console.log(layer[x])
 			clip_name_pab = layer[x].name.value.match(/#pab\S*/g)[0]
 			//
 			clip = {
 				id: layer[x].id,
 				layer_id: layer_id,
-				name: layer[x].name.value,
+				layer_name: layer_name,
+				layer_postition: i + 1,
+				clip_name: layer[x].name.value,
+				clip_position: x + 1,
 				params: {
 					box: (clip_name_pab.match(/.*\-(\d+).*/g)) ? clip_name_pab.match(/.*\-(\d+).*/)[1] : null,
 					rd: (clip_name_pab.match(/.*\-rd(?!\w).*/g)) ? true : false, //remove dots
@@ -803,7 +792,7 @@ async function arena_determine_clips() {
 					//
 					a: (clip_name_pab.match(/.*\-a(?!\w).*/g)) ? true : false, //trigger on a cycle
 					b: (clip_name_pab.match(/.*\-b(?!\w).*/g)) ? true : false, //trigger on b cycle
-					c: (clip_name_pab.match(/.*\-c(?!\w).*/g)) ? true : false, //trigger on clear
+					cl: (clip_name_pab.match(/.*\-cl(?!\w).*/g)) ? true : false, //trigger on clear
 					sg: (clip_name_pab.match(/.*\-sg(\d+)/g)) ? parseInt(clip_name_pab.match(/.*\-sg(\d+)/g)[0].match(/.*\-sg(\d+)/)[1], 10) : false, //size guard
 				}
 			}
