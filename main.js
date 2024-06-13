@@ -164,6 +164,7 @@ async function arena_execute_pab(slide) {
 	let clear_count = 0;
 	let triggers_count = 0;
 	let specific = 0
+	let delay = 25
 	//
 	for (var layer_pk = 0; layer_pk < arena.length; layer_pk++) {
 		//console.log('LAYER %d\n', i)
@@ -262,10 +263,11 @@ async function arena_execute_pab(slide) {
 
 		}
 		if (arena_scheduled_clip) {
+			delay = (config.arena.trigger_delay) ? config.arena.trigger_delay : 25
 			arena_execute_pab_trigger_timeout[layer_pk] = setTimeout(function (arg_clip, arg_layer_pk) {
 				arena_execute_pab_trigger(arg_clip)
 				clearTimeout(arena_execute_pab_trigger_timeout[arg_layer_pk])
-			}, 10, arena_scheduled_clip, layer_pk)
+			}, delay, arena_scheduled_clip, layer_pk)
 			//
 			triggers_count++
 		}
