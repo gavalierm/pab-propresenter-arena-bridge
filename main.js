@@ -263,8 +263,8 @@ async function arena_execute_pab(slide) {
 		}
 		if (arena_scheduled_clip) {
 			arena_execute_pab_trigger_timeout[layer_pk] = setTimeout(function (arg_clip, arg_layer_pk) {
-				clearTimeout(arena_execute_pab_trigger_timeout[arg_layer_pk])
 				arena_execute_pab_trigger(arg_clip)
+				clearTimeout(arena_execute_pab_trigger_timeout[arg_layer_pk])
 			}, 10, arena_scheduled_clip, layer_pk)
 			//
 			triggers_count++
