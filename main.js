@@ -179,16 +179,15 @@ async function arena_execute_pab(slide) {
 			//
 			if ((clip.params.a && arena_cycle == true) || (clip.params.b && arena_cycle == false)) {
 				//chedule for trigger
-				if (same_layer_trigger_protect == false) {
-					//console.warn("Aren[a: "+arena_state+" ]Trigger scheduled")
-					arena_scheduled_clip = clip
-					//enable protection
-					same_layer_trigger_protect = true;
-				} else {
+				if (same_layer_trigger_protect == true) {
 					console.warn("Arena: [" + arena_state + "] Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! [%s, %s]\n", clip.layer_name, clip.clip_name)
 					//skip whole clip
 					continue;
 				}
+				//console.warn("Aren[a: "+arena_state+" ]Trigger scheduled")
+				arena_scheduled_clip = clip
+				//enable protection
+				same_layer_trigger_protect = true;
                 
 			}
 
@@ -253,20 +252,20 @@ async function arena_execute_pab(slide) {
 			if (text_for_clip == undefined) {
 				console.warn("Arena: [" + arena_state + "] UNDEFINED TEXT [%s, %s]\n", clip.layer_name, clip.clip_name)
 				clear_count++
-				await arena_update_clip(clip.id, '')
+				arena_update_clip(clip.id, '')
 				continue;
 			}
 
 			//update clip
 			update_count++
-			await arena_update_clip(clip.id, text_for_clip)
+			arena_update_clip(clip.id, text_for_clip)
 
 		}
 		if (arena_scheduled_clip) {
 			arena_execute_pab_trigger_timeout[layer_pk] = setTimeout(function (arg_clip, arg_layer_pk) {
 				clearTimeout(arena_execute_pab_trigger_timeout[arg_layer_pk])
 				arena_execute_pab_trigger(arg_clip)
-			}, 5, arena_scheduled_clip, layer_pk)
+			}, 10, arena_scheduled_clip, layer_pk)
 			//
 			triggers_count++
 		}
@@ -276,7 +275,7 @@ async function arena_execute_pab(slide) {
 	console.log("\n")
 	console.log("Arena: [" + arena_state + "] Updated: %d", update_count)
 	console.log("Arena: [" + arena_state + "] Cleared: %d", clear_count)
-	console.log("Arena: [" + arena_state + "] Triggered: %d", triggers_count)
+	console.log("Arena: [" + arena_state + "] Scheduled: %d", triggers_count)
 	//
 	//arena_execute_pab_trigger(arena_scheduled_clip)
 	//
@@ -549,27 +548,26 @@ async function arena_execute_pab_trigger(clip, connect = true) {
 		console.error("Execute: Arena NOT connected")
 		return;
 	}
+
+
 	try {
 		var response = null;
 		if (connect) {
+			console.log("Arena: [" + arena_state + "] Trigger clip", clip.clip_name);
 			response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + clip.id + '/connect', { method: 'POST', body: '' });
 		} else {
-			console.log('CLEAR WHOLE LAYER?????');
+			console.log("Arena: [" + arena_state + "] CLEAR WHOLE LAYER?????");
 			// /composition/layers/by-id/{layer-id}/clear
 			response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_layer_by_id + '/' + clip.layer_id + '/clear', { method: 'POST', body: '' });
             
 		}
 		if (!response) {
-			console.error("Response not defined")
+			console.error("Arena: [" + arena_state + "] Response not defined")
 		}
-		//const response = await fetch('https://api.github.com/users/github');
 		if (!response.ok) {
 			console.error("Arena: [" + arena_state + "] Trigger failed");
-			return;
-			//return arena_reconnect();
 		}
 		return;
-		//
 	} catch (error) {
 		console.error("Arena: [" + arena_state + "] Connection error", error);
 		return;
