@@ -159,7 +159,7 @@ async function arena_execute_pab(slide) {
 	let text_for_clip = ''
 	let arena_scheduled_clip = null
 	let actual
-	let same_layer_triger_protect = false
+	let same_layer_trigger_protect = false
 	let update_count = 0;
 	let clear_count = 0;
 	let triggers_count = 0;
@@ -170,7 +170,7 @@ async function arena_execute_pab(slide) {
 		//layers
 		layer = arena[layer_pk]
 		// disable protection for triggering on same page
-		same_layer_triger_protect = false
+		same_layer_trigger_protect = false
 		//
 		for (var clip_pk = 0; clip_pk < layer.length; clip_pk++) {
 			//slide
@@ -179,11 +179,11 @@ async function arena_execute_pab(slide) {
 			//
 			if ((clip.params.a && arena_cycle == true) || (clip.params.b && arena_cycle == false)) {
 				//chedule for trigger
-				if (same_layer_triger_protect == false) {
+				if (same_layer_trigger_protect == false) {
 					//console.warn("Aren[a: "+arena_state+" ]Trigger scheduled")
 					arena_scheduled_clip = clip
 					//enable protection
-					same_layer_triger_protect = true;
+					same_layer_trigger_protect = true;
 				} else {
 					console.warn("Arena: [" + arena_state + "] Trigger schedule PROTECTION SKIP. FIX THIS IN ARENA!!! [%s, %s]\n", clip.layer_name, clip.clip_name)
 					//skip whole clip
@@ -543,43 +543,39 @@ async function arena_connect() {
 	}
 }
 
-async function arena_execute_pab_trigger(clips, connect = true) {
+async function arena_execute_pab_trigger(clip, connect = true) {
 
 	if (arena_state != 'connected') {
 		console.error("Execute: Arena NOT connected")
 		return;
 	}
-
-	for (var i = 0; i < clips.length; i++) {
-		//
-		//console.log("arena_execute_pab_trigger", clips[i])
-		try {
-			var response = null;
-			if (connect) {
-				response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + clips[i].id + '/connect', { method: 'POST', body: '' });
-			} else {
-				console.log('CLEAR WHOLE LAYER?????');
-				// /composition/layers/by-id/{layer-id}/clear
-				response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_layer_by_id + '/' + clips[i].layer_id + '/clear', { method: 'POST', body: '' });
+	try {
+		var response = null;
+		if (connect) {
+			response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_clip_by_id + '/' + clip.id + '/connect', { method: 'POST', body: '' });
+		} else {
+			console.log('CLEAR WHOLE LAYER?????');
+			// /composition/layers/by-id/{layer-id}/clear
+			response = await fetch('http://' + config.arena.host + ':' + config.arena.port + '/api/v1' + arena_path_layer_by_id + '/' + clip.layer_id + '/clear', { method: 'POST', body: '' });
             
-			}
-			if (!response) {
-				console.error("Response not defined")
-			}
-			//const response = await fetch('https://api.github.com/users/github');
-			if (!response.ok) {
-				console.error("Arena: [" + arena_state + "] Trigger failed");
-				continue;
-				//return arena_reconnect();
-			}
-			continue;
-			//
-		} catch (error) {
-			console.error("Arena: [" + arena_state + "] Connection error", error);
-			continue;
+		}
+		if (!response) {
+			console.error("Response not defined")
+		}
+		//const response = await fetch('https://api.github.com/users/github');
+		if (!response.ok) {
+			console.error("Arena: [" + arena_state + "] Trigger failed");
+			return;
 			//return arena_reconnect();
 		}
+		return;
+		//
+	} catch (error) {
+		console.error("Arena: [" + arena_state + "] Connection error", error);
+		return;
+		//return arena_reconnect();
 	}
+
 }
 
 function parse_first_word(words) {
