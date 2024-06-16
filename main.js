@@ -169,7 +169,7 @@ async function arena_execute_pab(slide) {
 	let delay = 25
 	//
 	for (var layer_pk = 0; layer_pk < arena.length; layer_pk++) {
-		//console.log('LAYER %d\n', i)
+		//console.log("LAYER %d\n', i)
 		//layers
 		layer = arena[layer_pk]
 		// disable protection for triggering on same page
@@ -177,7 +177,7 @@ async function arena_execute_pab(slide) {
 		//
 		for (var clip_pk = 0; clip_pk < layer.length; clip_pk++) {
 			//slide
-			//console.log('\n\tclip %d', clip_pk)
+			//console.log("\n\tclip %d', clip_pk)
 			clip = layer[clip_pk]
 			//
 			if ((clip.params.a && arena_cycle == true) || (clip.params.b && arena_cycle == false)) {
@@ -449,12 +449,12 @@ async function propresenter_connect() {
 		console.warn("\n------\nProPresenter Module is disabled!\n------\n");
 		return;
 	}
-	console.log('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/remote');
-	const ws = new WebSocket('ws://' + config.propresenter.host + ':' + config.propresenter.port + '/remote');
+	console.log("ws://' + config.propresenter.host + ':' + config.propresenter.port + '/remote");
+	const ws = new WebSocket('ws://' + config.propresenter.host + ":" + config.propresenter.port + "/remote");
 	//
 	ws.on('open', function open() {
-		console.log('ProPresenter: ["+propresenter_state+"] Connection Established');
-		console.log('ProPresenter: ["+propresenter_state+"] Sending Password');
+		console.log("ProPresenter: [" + propresenter_state + "] Connection Established");
+		console.log("ProPresenter: [" + propresenter_state + "] Sending Password");
 		ws.send('{"action":"authenticate","protocol":"701","password":"' + config.propresenter.pass + '"}');
 	});
     
@@ -464,7 +464,7 @@ async function propresenter_connect() {
 	});
 	//set close handle
 	ws.on('close', function close() {
-		console.log('ProPresenter: ["+propresenter_state+"] Connection Closed');
+		console.log("ProPresenter: [" + propresenter_state + "] Connection Closed");
 		return propresenter_reconnect();
 	});
 	//setup message handle
